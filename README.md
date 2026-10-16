@@ -45,3 +45,57 @@ the requesting Chromium window remains active on the blank page.
 After Alt+G, focus stays in Chromium’s group-name field. Type a name and press
 Enter to close the editor and move focus to the Vimium bar. Switching to another
 window cancels the temporary Enter binding.
+
+Alt+P toggles Picture-in-Picture for a ready video in the current page/frame,
+preferring a playing video and then the largest player. Vimium’s default Alt+P
+pin-tab binding is removed. After reloading the local extension, refresh open
+video pages once to load the updated content script.
+
+Alt+M toggles mute for all current tabs in the active group, within the current
+window. If any tab is unmuted, all are muted; if all are muted, all are unmuted.
+Other groups are unchanged, including tabs from the same website. An ungrouped
+tab toggles only itself. Vimium’s single-tab Alt+M mapping is removed. Assign
+“Mute or unmute current tab group” to Alt+M in `chrome://extensions/shortcuts`
+on a new profile; this command has no manifest default because Chromium permits
+only four suggested extension shortcuts.
+
+Fully muted groups display a `🔇 ` prefix (for example, `🔇 Chats`). Unmuting
+any tab removes the prefix. The indicator follows manual mute changes, group
+renames, and tab membership changes, and is reconciled when the worker starts.
+Unnamed muted groups display `🔇` and return to an empty title when unmuted.
+This uses the `tabGroups` permission and reserves that leading prefix as a marker.
+
+Alt+C collapses or expands the active tab group; Vimium’s default Alt+C previous-
+tab shortcut is removed. Assign “Collapse or expand current tab group” to Alt+C
+in Chromium’s extension shortcuts when restoring on another profile. Ungrouped
+tabs do nothing unless the worker remembers a group just collapsed in that
+window, in which case Alt+C reopens it and restores its active tab.
+
+Alt+H/L skip collapsed tab groups. Expanded groups and ungrouped tabs remain
+in the cycle, in tab-strip order. If no other eligible section exists, the
+active tab stays unchanged. Collapsing the active group does not break direction
+when leaving it, and navigation never reopens a skipped collapsed group.
+
+Alt+Shift+C expands all collapsed tab groups in the current window without
+switching the active tab or changing other windows. Vimium’s default Alt+Shift+C
+next-tab mapping is removed. On a fresh profile, assign “Expand all tab groups
+in current window” to Alt+Shift+C in Chromium’s extension shortcut settings.
+
+Fully muted groups also turn grey, making their muted state visible in the
+collapsed sidebar. The original colour is saved in local extension storage and
+restored when any tab is unmuted. Recolouring a muted group changes the colour
+that will be restored. On browser restart, uniquely named marked groups can
+recover their saved colour even if Chromium changes their group IDs; ambiguous
+same-name groups are not guessed. An originally grey group keeps its grey colour.
+
+Alt+Shift+M mutes every current tab in the active group, collapses that group,
+and advances to the next expanded group or ungrouped tabs, wrapping like Alt+L.
+It always mutes, even if the group is already muted. Other groups and windows
+are unchanged. On an ungrouped tab it does nothing; with no other eligible
+section it mutes/collapses the group without switching. Assign “Mute and
+collapse group, then switch to next” to Alt+Shift+M when restoring a profile.
+
+When Alt+C collapses the current group, it also advances like Alt+L to the next
+expanded group or ungrouped tabs, wrapping at the end. Expanding a group does not
+advance. If no other eligible section exists, focus remains on the current tab.
+Alt+Shift+C remains expand-all and does not change focus.

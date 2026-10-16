@@ -1,3 +1,145 @@
+const lastCollapsedGroupByWindow = new Map();
+
+async function expandAllGroups(sourceTabId) {
+  const active = sourceTabId === undefined
+    ? (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]
+    : await chrome.tabs.get(sourceTabId);
+  if (!active?.active) return;
+  const groups = await chrome.tabGroups.query({ windowId: active.windowId, collapsed: true });
+  await Promise.all(groups.map(group => chrome.tabGroups.update(group.id, { collapsed: false })));
+  lastCollapsedGroupByWindow.delete(active.windowId);
+}
+
+async function toggleGroupCollapsed(sourceTabId) {
+  const active = sourceTabId === undefined
+    ? (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]
+    : await chrome.tabs.get(sourceTabId);
+  if (!active?.active) return;
+  const remembered = lastCollapsedGroupByWindow.get(active.windowId);
+  const groupId = active.groupId >= 0 ? active.groupId : remembered?.groupId;
+  if (groupId === undefined) return;
+  let group;
+  try { group = await chrome.tabGroups.get(groupId); } catch {
+    lastCollapsedGroupByWindow.delete(active.windowId);
+    return;
+  }
+  if (group.windowId !== active.windowId || (active.groupId < 0 && !group.collapsed)) return;
+  const collapsed = !group.collapsed;
+  // Choose the next eligible section before hiding the active group, so the
+  // browser cannot substitute a different destination during collapse.
+  if (collapsed) await cycleTabSection(1, active.id);
+  await chrome.tabGroups.update(group.id, { collapsed });
+  if (collapsed) {
+    lastCollapsedGroupByWindow.set(active.windowId, { groupId, tabId: active.id });
+  } else {
+    lastCollapsedGroupByWindow.delete(active.windowId);
+    if (active.groupId < 0 && remembered) {
+      const tab = await chrome.tabs.get(remembered.tabId).catch(() => null);
+      if (tab?.windowId === active.windowId && tab.groupId === groupId) {
+        await chrome.tabs.update(tab.id, { active: true });
+      }
+    }
+  }
+}
+
+const GROUP_MUTE_PREFIX = "🔇 ";
+const MUTE_COLOR_STORAGE_KEY = "mutedGroupOriginalColors";
+let savedMuteColors;
+async function getSavedMuteColors() {
+  if (!savedMuteColors) {
+    savedMuteColors = chrome.storage.local.get(MUTE_COLOR_STORAGE_KEY)
+      .then(data => data[MUTE_COLOR_STORAGE_KEY] || {});
+  }
+  return savedMuteColors;
+}
+async function saveMuteColors(colors) {
+  await chrome.storage.local.set({ [MUTE_COLOR_STORAGE_KEY]: colors });
+}
+
+async function syncGroupMuteIndicator(groupId) {
+  let group;
+  try { group = await chrome.tabGroups.get(groupId); } catch { return; }
+  const tabs = await chrome.tabs.query({ windowId: group.windowId, groupId });
+  if (!tabs.length) return;
+  const title = group.title || "";
+  const marked = title.startsWith(GROUP_MUTE_PREFIX) || title === "🔇";
+  const baseTitle = title.startsWith(GROUP_MUTE_PREFIX)
+    ? title.slice(GROUP_MUTE_PREFIX.length) : title === "🔇" ? "" : title;
+  const muted = tabs.every(tab => tab.mutedInfo?.muted);
+  const nextTitle = muted ? (baseTitle ? GROUP_MUTE_PREFIX + baseTitle : "🔇") : baseTitle;
+  const colors = await getSavedMuteColors();
+  let original = colors[groupId];
+  // Group IDs change after a browser restart. Recover a uniquely named marked
+  // group only when its old ID no longer belongs to another live group.
+  if (!original && marked && group.color === "grey") {
+    const liveIds = new Set((await chrome.tabGroups.query({})).map(g => String(g.id)));
+    const matches = Object.entries(colors).filter(([id, value]) =>
+      value.title === baseTitle && !liveIds.has(id));
+    if (matches.length === 1) {
+      const [oldId, value] = matches[0];
+      original = colors[groupId] = value;
+      delete colors[oldId];
+      await saveMuteColors(colors);
+    }
+  }
+  const update = {};
+  if (nextTitle !== title) update.title = nextTitle;
+  if (muted) {
+    if (!original || original.title !== baseTitle || group.color !== "grey") {
+      colors[groupId] = {
+        color: group.color !== "grey" ? group.color : original?.color || group.color,
+        title: baseTitle
+      };
+      // Save before applying grey so a suspended/reloaded worker loses nothing.
+      await saveMuteColors(colors);
+    }
+    if (group.color !== "grey") update.color = "grey";
+  } else if (original && group.color !== original.color) {
+    update.color = original.color;
+  }
+  if (Object.keys(update).length) {
+    try { await chrome.tabGroups.update(groupId, update); } catch { return; }
+  }
+  if (!muted && original) {
+    delete colors[groupId];
+    await saveMuteColors(colors);
+  }
+}
+
+async function syncAllGroupMuteIndicators() {
+  const groups = await chrome.tabGroups.query({});
+  // Serialize storage changes while reconciling several groups.
+  for (const group of groups) await syncGroupMuteIndicator(group.id);
+}
+
+async function toggleGroupMute(sourceTabId) {
+  const active = sourceTabId === undefined
+    ? (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]
+    : await chrome.tabs.get(sourceTabId);
+  if (!active?.active) return;
+  const tabs = active.groupId < 0 ? [active]
+    : await chrome.tabs.query({ windowId: active.windowId, groupId: active.groupId });
+  const muted = tabs.some(tab => !tab.mutedInfo?.muted);
+  await Promise.all(tabs.map(tab => chrome.tabs.update(tab.id, { muted })));
+  if (active.groupId >= 0) await syncGroupMuteIndicator(active.groupId);
+}
+
+async function muteCollapseAndAdvance(sourceTabId) {
+  const active = sourceTabId === undefined
+    ? (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]
+    : await chrome.tabs.get(sourceTabId);
+  if (!active?.active || active.groupId < 0) return;
+  const tabs = await chrome.tabs.query({ windowId: active.windowId, groupId: active.groupId });
+  // Always mute: running this action on an already muted group must not unmute it.
+  await Promise.all(tabs.map(tab => chrome.tabs.update(tab.id, { muted: true })));
+  await syncGroupMuteIndicator(active.groupId);
+  // Select the next eligible section before collapsing, so Chromium does not
+  // choose a different destination when hiding the active group's tabs.
+  await cycleTabSection(1, active.id);
+  await chrome.tabGroups.update(active.groupId, { collapsed: true });
+  lastCollapsedGroupByWindow.set(active.windowId, { groupId: active.groupId, tabId: active.id });
+}
+
 async function cycleTabInGroup(direction, sourceTabId) {
   const active = sourceTabId === undefined
     ? (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]
@@ -49,9 +191,22 @@ async function cycleTabSection(direction, sourceTabId) {
   }
   const groups = [...sections.keys()];
   if (groups.length < 2) return;
+  const collapsed = new Set((await chrome.tabGroups.query({
+    windowId: active.windowId, collapsed: true
+  })).map(group => group.id));
   lastTabBySection.set(`${active.windowId}:${active.groupId}`, active.id);
   const index = groups.indexOf(active.groupId);
-  const nextGroup = groups[(index + direction + groups.length) % groups.length];
+  let nextGroup;
+  // Keep the current group's position even if it is collapsed, so direction
+  // still follows tab-strip order when leaving a collapsed active group.
+  for (let step = 1; step < groups.length; step++) {
+    const candidate = groups[(index + direction * step + groups.length) % groups.length];
+    if (candidate < 0 || !collapsed.has(candidate)) {
+      nextGroup = candidate;
+      break;
+    }
+  }
+  if (nextGroup === undefined) return;
   const candidates = sections.get(nextGroup);
   const remembered = lastTabBySection.get(`${active.windowId}:${nextGroup}`);
   const target = candidates.find(tab => tab.id === remembered) || candidates[0];
@@ -67,6 +222,22 @@ function enqueueCycle(direction, sourceTabId) {
 }
 chrome.commands.onCommand.addListener(command => {
   lastCommand = command;
+  if (command === "mute-collapse-next-group") {
+    pending = pending.then(() => muteCollapseAndAdvance()).catch(console.error);
+    return;
+  }
+  if (command === "expand-all-groups") {
+    pending = pending.then(() => expandAllGroups()).catch(console.error);
+    return;
+  }
+  if (command === "toggle-group-collapse") {
+    pending = pending.then(() => toggleGroupCollapsed()).catch(console.error);
+    return;
+  }
+  if (command === "toggle-group-mute") {
+    pending = pending.then(() => toggleGroupMute()).catch(console.error);
+    return;
+  }
   if (command === "previous-tab-section" || command === "next-tab-section") {
     pending = pending.then(() => cycleTabSection(command === "next-tab-section" ? 1 : -1)).catch(console.error);
     return;
@@ -83,8 +254,28 @@ chrome.commands.onCommand.addListener(command => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "group-cycle-diagnostics" && !sender.tab?.url?.startsWith("http")) {
-    sendResponse({ workerVersion: "1.4.0", lastCommand });
+    sendResponse({ workerVersion: chrome.runtime.getManifest().version, lastCommand });
     return;
+  }
+  if (message?.type === "mute-collapse-next-group" && sender.tab) {
+    pending = pending.then(() => muteCollapseAndAdvance(sender.tab.id)).catch(console.error);
+    pending.then(() => sendResponse({ ok: true }));
+    return true;
+  }
+  if (message?.type === "expand-all-groups" && sender.tab) {
+    pending = pending.then(() => expandAllGroups(sender.tab.id)).catch(console.error);
+    pending.then(() => sendResponse({ ok: true }));
+    return true;
+  }
+  if (message?.type === "toggle-group-collapse" && sender.tab) {
+    pending = pending.then(() => toggleGroupCollapsed(sender.tab.id)).catch(console.error);
+    pending.then(() => sendResponse({ ok: true }));
+    return true;
+  }
+  if (message?.type === "toggle-group-mute" && sender.tab) {
+    pending = pending.then(() => toggleGroupMute(sender.tab.id)).catch(console.error);
+    pending.then(() => sendResponse({ ok: true }));
+    return true;
   }
   if (message?.type === "create-group-tab" && sender.tab && typeof message.inCurrentGroup === "boolean") {
     pending = pending.then(() => createTabInGroup(message.inCurrentGroup, sender.tab.id)).catch(console.error);
@@ -102,3 +293,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   enqueueCycle(message.direction, sender.tab.id).then(() => sendResponse({ ok: true }));
   return true;
 });
+
+// Coalesce event bursts from muting several tabs and serialize with shortcuts.
+let indicatorSyncScheduled = false;
+function scheduleMuteIndicatorSync() {
+  if (indicatorSyncScheduled) return;
+  indicatorSyncScheduled = true;
+  pending = pending.then(async () => {
+    indicatorSyncScheduled = false;
+    await syncAllGroupMuteIndicators();
+  }).catch(console.error);
+}
+chrome.tabs.onUpdated.addListener((_tabId, changes) => {
+  if ("mutedInfo" in changes || "groupId" in changes) scheduleMuteIndicatorSync();
+});
+chrome.tabs.onCreated.addListener(scheduleMuteIndicatorSync);
+chrome.tabs.onRemoved.addListener(scheduleMuteIndicatorSync);
+chrome.tabs.onAttached.addListener(scheduleMuteIndicatorSync);
+chrome.tabs.onDetached.addListener(scheduleMuteIndicatorSync);
+chrome.tabGroups.onCreated.addListener(scheduleMuteIndicatorSync);
+chrome.tabGroups.onUpdated.addListener(scheduleMuteIndicatorSync);
+chrome.tabGroups.onRemoved.addListener(scheduleMuteIndicatorSync);
+scheduleMuteIndicatorSync();

@@ -1,3 +1,19 @@
+// Run directly from the key event to retain the user gesture required for PiP.
+function togglePictureInPicture() {
+  if (document.pictureInPictureElement) {
+    document.exitPictureInPicture().catch(console.error);
+    return;
+  }
+  const videos = [...document.querySelectorAll("video")]
+    .filter(video => video.readyState >= 2 && video.videoWidth > 0)
+    .sort((a, b) => Number(a.paused) - Number(b.paused)
+      || b.clientWidth * b.clientHeight - a.clientWidth * a.clientHeight);
+  const video = videos[0];
+  if (!video || !document.pictureInPictureEnabled) return;
+  video.disablePictureInPicture = false;
+  video.requestPictureInPicture().catch(console.error);
+}
+
 // Register before page scripts so websites cannot reserve Alt+J/K first.
 function groupDirection(event) {
   if (event.metaKey || event.isComposing) return 0;
@@ -12,6 +28,49 @@ function groupDirection(event) {
 
 for (const type of ["keydown", "keypress", "keyup"]) {
   window.addEventListener(type, event => {
+    if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
+        && !event.isComposing && event.key.toLowerCase() === "m") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (type === "keydown" && !event.repeat) {
+        chrome.runtime.sendMessage({ type: "mute-collapse-next-group" }).catch(() => {});
+      }
+      return;
+    }
+    if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
+        && !event.isComposing && event.key.toLowerCase() === "c") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (type === "keydown" && !event.repeat) {
+        chrome.runtime.sendMessage({ type: "expand-all-groups" }).catch(() => {});
+      }
+      return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey
+        && !event.isComposing && event.key.toLowerCase() === "c") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (type === "keydown" && !event.repeat) {
+        chrome.runtime.sendMessage({ type: "toggle-group-collapse" }).catch(() => {});
+      }
+      return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey
+        && !event.isComposing && event.key.toLowerCase() === "m") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (type === "keydown" && !event.repeat) {
+        chrome.runtime.sendMessage({ type: "toggle-group-mute" }).catch(() => {});
+      }
+      return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey
+        && !event.isComposing && event.key.toLowerCase() === "p") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (type === "keydown" && !event.repeat) togglePictureInPicture();
+      return;
+    }
     if (event.ctrlKey && event.shiftKey && !event.altKey && !event.metaKey && !event.isComposing
         && (event.code === "Digit4" || event.code === "Digit5")) {
       event.preventDefault();

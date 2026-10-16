@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Group Cycle",
-  "version": "1.7.1",
+  "version": "1.16.0",
   "description": "Cycle tabs within the current group using Alt+J and Alt+K.",
   "background": {
     "service_worker": "service-worker.js"
@@ -49,9 +49,25 @@
         "default": "Ctrl+Shift+6"
       },
       "description": "New ungrouped tab"
+    },
+    "toggle-group-mute": {
+      "description": "Mute or unmute current tab group"
+    },
+    "toggle-group-collapse": {
+      "description": "Collapse or expand current tab group"
+    },
+    "expand-all-groups": {
+      "description": "Expand all tab groups in current window"
+    },
+    "mute-collapse-next-group": {
+      "description": "Mute and collapse group, then switch to next"
     }
   },
   "chrome_url_overrides": {
     "newtab": "newtab.html"
-  }
+  },
+  "permissions": [
+    "tabGroups",
+    "storage"
+  ]
 }
