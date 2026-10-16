@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Group Cycle",
+  "version": "1.7.1",
+  "description": "Cycle tabs within the current group using Alt+J and Alt+K.",
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "keyboard.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ],
+  "commands": {
+    "cycle-group-next": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+9"
+      },
+      "description": "Next tab in current group"
+    },
+    "cycle-group-previous": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+8"
+      },
+      "description": "Previous tab in current group"
+    },
+    "create-group-tab": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+7"
+      },
+      "description": "New tab in current group"
+    },
+    "previous-tab-section": {
+      "description": "Previous group or ungrouped tabs"
+    },
+    "next-tab-section": {
+      "description": "Next group or ungrouped tabs"
+    },
+    "create-ungrouped-tab": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+6"
+      },
+      "description": "New ungrouped tab"
+    }
+  },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  }
+}
