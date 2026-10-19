@@ -36,8 +36,8 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
   await page.send('Runtime.enable');
   await page.send('Emulation.setDeviceMetricsOverride',{width:1100,height:1100,deviceScaleFactor:1,mobile:false});
   await page.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'dark'}]});
-  await waitFor(()=>page.evaluate('document.querySelectorAll("#browser-actions .action").length === 19'));
-  assert.equal(await page.evaluate('document.querySelectorAll("#page-actions .action").length'),3);
+  await waitFor(()=>page.evaluate('document.querySelectorAll("#browser-actions .action").length === 20'));
+  assert.equal(await page.evaluate('document.querySelectorAll("#page-actions .action").length'),4);
   assert.equal(await page.evaluate('document.querySelectorAll("#desktop-actions .action").length'),6);
   assert.equal(await page.evaluate('document.querySelector("#save").disabled'),true);
   await page.evaluate('document.querySelector("#page-actions .shortcut").click()');

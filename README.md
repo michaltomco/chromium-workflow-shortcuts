@@ -77,4 +77,4 @@ and these native browser mappings. It works without Omarchy or private dotfiles.
 See [setup instructions](integrations/README.md#setup) to load the optional Lua file.
 
 With the optional Hyprland integration, **Alt+O** opens native split view.
-On Chromium 152, separate it using the split-view menu; the shortcut does not toggle it off.
+**Alt+Shift+O** separates the focused split into regular tabs (refresh existing pages after reloading the extension).

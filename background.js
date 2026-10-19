@@ -1,3 +1,30 @@
+// Chromium 152 exposes split IDs but has no dedicated separation API.
+async function separateSplitView(sourceTabId) {
+  const active = sourceTabId === undefined
+    ? (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]
+    : await chrome.tabs.get(sourceTabId);
+  if (!active?.active || !(active.splitViewId >= 0)) return;
+  const tabs = await chrome.tabs.query({ windowId: active.windowId });
+  const pair = tabs.filter(tab => tab.splitViewId === active.splitViewId);
+  if (pair.length !== 2) return;
+  // A temporary neighbour guarantees space outside the split, even in a
+  // two-tab window or a pinned/grouped split. Moving within the pair only swaps it.
+  const placeholder = await chrome.tabs.create({ windowId: active.windowId,
+    index: Math.max(...pair.map(tab => tab.index)) + 1,
+    url: "about:blank", active: false, pinned: active.pinned });
+  try {
+    if (active.groupId >= 0) await chrome.tabs.group({ tabIds: placeholder.id, groupId: active.groupId });
+    const target = await chrome.tabs.get(placeholder.id);
+    await chrome.tabs.move(active.id, { index: target.index });
+  } finally {
+    try {
+      await chrome.tabs.move(active.id, { index: active.index });
+    } finally {
+      await chrome.tabs.remove(placeholder.id);
+    }
+  }
+}
+
 const lastCollapsedGroupByWindow = new Map();
 
 async function unloadCurrentTab() {
@@ -262,6 +289,7 @@ const browserCommandActions = {
     if (state === "fullscreen") fullscreenPreviousStates.set(window.id, window.state);
     await chrome.windows.update(window.id, { state });
   },
+  "separate-split-view": () => separateSplitView(),
   "move-tab-next": () => moveCurrentTab(1),
   "move-tab-previous": () => moveCurrentTab(-1),
   "close-current-tab": async () => {
@@ -355,6 +383,12 @@ function dispatchRegisteredCommand(command) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === "separate-split-view" && sender.tab) {
+    pending = pending.then(() => separateSplitView(sender.tab.id));
+    pending.then(() => sendResponse({ ok: true }), error => sendResponse({ error: error.message }));
+    pending = pending.catch(console.error);
+    return true;
+  }
   if (message?.type === "set-shortcut-capture" && sender.url === chrome.runtime.getURL("options.html")
       && Number.isInteger(message.tabId)) {
     (async () => {

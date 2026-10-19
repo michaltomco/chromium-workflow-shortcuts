@@ -53,6 +53,7 @@ for (const type of ['keydown', 'keypress', 'keyup']) {
     if (type !== 'keydown' || event.repeat) return;
     if (action.id === 'videoFullscreen') toggleVideoFullscreen();
     else if (action.id === 'pictureInPicture') togglePictureInPicture();
+    else if (action.id === 'separateSplitView') chrome.runtime.sendMessage({ type: 'separate-split-view' }).catch(console.error);
     else chrome.runtime.sendMessage('hfjbmagddngcpeloejdejnfgbamkjaeg', {
       handler: 'command', command: 'Vomnibar.activateInNewTab'
     }).catch(() => {});

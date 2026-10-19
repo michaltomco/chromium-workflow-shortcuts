@@ -16,5 +16,6 @@
   "open-history": "Ctrl+Shift+H",
   "open-downloads": "Ctrl+Shift+Y",
   "open-private-window": "Ctrl+Shift+P",
-  "cycle-group-previous": "Alt+K"
+  "cycle-group-previous": "Alt+K",
+  "separate-split-view": "Alt+Shift+O"
 }
