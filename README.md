@@ -30,7 +30,7 @@ Vimium bindings for Alt+P, Alt+M, Alt+C, and Alt+Shift+C if present.
 | Alt+C | Collapse / expand group |
 | Alt+Shift+C | Expand all groups |
 | Alt+P | Toggle Picture-in-Picture for a video on the page |
-| Alt+F | Toggle video fullscreen |
+| Alt+Shift+F | Toggle video fullscreen |
 | Alt+S | Toggle fullscreen |
 | Ctrl+Shift+H | Open history |
 | Ctrl+Shift+Y | Open downloads |
@@ -43,7 +43,7 @@ Unloaded tabs stay in the sidebar and reload when selected. Muted groups show
 `🔇` and turn grey; unmuting restores their original colour.
 
 After reloading the extension, refresh existing pages to reactivate page shortcuts
-such as Alt+P and Alt+F.
+such as Alt+P and Alt+Shift+F.
 
 ## Optional Hyprland integration
 
@@ -57,6 +57,6 @@ and these native browser mappings. It works without Omarchy or private dotfiles.
 | Alt+G | Open native group-name editor |
 | Ctrl+H / Ctrl+L | Back / forward |
 | Ctrl+Alt+Shift+S | Save page |
-| Alt+F (PiP focused) | Toggle player fullscreen |
+| Alt+Shift+F (PiP focused) | Toggle player fullscreen |
 
 See [setup instructions](integrations/README.md#setup) to load the optional Lua file.

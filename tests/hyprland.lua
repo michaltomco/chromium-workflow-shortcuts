@@ -58,7 +58,7 @@ end
 assert(load(source, "@/tmp/workflow test's clone/integrations/hyprland.lua"))()
 assert(#rules == 1 and rules[1].float and rules[1].pin)
 assert(bindings["ALT + G"] and bindings["CTRL + H"] and not bindings["ALT + J"])
-assert(not bindings["ALT + F"], "Browser Alt+F is handled directly by the content script")
+assert(not bindings["ALT + SHIFT + F"], "Browser Alt+Shift+F is handled directly by the content script")
 assert(pip.at.x == 1510, "Scaled PiP must fit the monitor")
 pip.at = { x = 100, y = 100 }
 run_timers(300)
@@ -69,18 +69,18 @@ assert(pip.at.x == 1510, "Correct delayed off-screen changes")
 active = other
 emit("window.active")
 assert(not bindings["ALT + G"] and not bindings["CTRL + H"])
-assert(not bindings["ALT + F"])
+assert(not bindings["ALT + SHIFT + F"])
 active = pip
 emit("window.active")
 assert(bindings["ALT + P"] and not bindings["ALT + G"])
-bindings["ALT + F"]()
+bindings["ALT + SHIFT + F"]()
 assert(commands[#commands].kind == "fullscreen" and commands[#commands].args.window == "address:pip")
 assert(commands[#commands - 1].kind == "pin" and commands[#commands - 1].args.action == "unset")
 pip.fullscreen = 2
 pip.at.x = 1790
 run_timers(300)
 assert(pip.at.x == 1790, "Do not reposition fullscreen PiP")
-bindings["ALT + F"]()
+bindings["ALT + SHIFT + F"]()
 assert(commands[#commands].kind == "pin" and commands[#commands].args.action == "set")
 pip.fullscreen = 0
 bindings["ALT + P"]()

@@ -40,7 +40,7 @@ function groupDirection(event) {
 
 for (const type of ["keydown", "keypress", "keyup"]) {
   window.addEventListener(type, event => {
-    const fullscreenKey = event.altKey && !event.ctrlKey && !event.shiftKey
+    const fullscreenKey = event.altKey && !event.ctrlKey && event.shiftKey
       && event.key.toLowerCase() === "f";
     if (fullscreenKey && !event.metaKey && !event.isComposing) {
       event.preventDefault();

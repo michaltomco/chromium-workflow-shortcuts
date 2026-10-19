@@ -106,9 +106,9 @@ do
     local wanted = not not is_pip(active)
     if wanted == installed then return end
     hl.unbind("ALT + P")
-    hl.unbind("ALT + F")
+    hl.unbind("ALT + SHIFT + F")
     if wanted then
-      bind("ALT + F", "PiP: Toggle fullscreen", function()
+      bind("ALT + SHIFT + F", "PiP: Toggle fullscreen", function()
         local window = hl.get_active_window()
         if is_pip(window) then
           local target = "address:" .. window.address

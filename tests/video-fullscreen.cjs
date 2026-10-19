@@ -14,11 +14,13 @@ vm.runInNewContext(fs.readFileSync('keyboard.js', 'utf8'), {
   document, window: { addEventListener(type, callback) { listeners[type] = callback; } }, console,
 });
 function key(type, overrides = {}) {
-  const event = { key: 'f', code: 'KeyF', altKey: true, ctrlKey: false, shiftKey: false,
+  const event = { key: 'F', code: 'KeyF', altKey: true, ctrlKey: false, shiftKey: true,
     metaKey: false, isComposing: false, repeat: false,
     preventDefault() {}, stopImmediatePropagation() {}, ...overrides };
   listeners[type](event);
 }
+key('keydown', { shiftKey: false });
+assert.equal(requested, null, 'Alt+F is no longer intercepted');
 key('keydown');
 assert.equal(requested, 'playing');
 requested = null;
