@@ -35,6 +35,10 @@ Chromium version.
 | Chromium | Ctrl+H / Ctrl+L | Back / forward |
 | Chromium | Ctrl+Alt+Shift+S | Save page |
 | PiP player | Alt+P | Return video and focus to Chromium |
+| PiP player | Alt+F | Toggle player fullscreen |
+
+Press Alt+F again to leave fullscreen; PiP's pin is restored on exit. Refresh existing video pages after
+updating the extension to load its new video shortcut.
 
 The module also floats and pins PiP, keeps it within the scaled monitor bounds,
 and moves focus into Vimium's new-tab search after navigation or group naming.

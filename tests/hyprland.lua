@@ -3,7 +3,7 @@ local file = assert(io.open("integrations/hyprland.lua"))
 local source = file:read("*a")
 file:close()
 local browser = { address = "browser", class = "chromium", title = "Video - Chromium", pid = 42, focus_history_id = 0 }
-local pip = { address = "pip", class = "", title = "Picture in picture", pid = 42, floating = true,
+local pip = { address = "pip", class = "", title = "Picture in picture", pid = 42, floating = true, pinned = true,
   at = { x = 1790, y = 36 }, size = { x = 600, y = 338 },
   monitor = { x = 0, y = 0, width = 3440, height = 1440, scale = 1.6 } }
 local other = { address = "other", class = "terminal", title = "Terminal" }
@@ -40,7 +40,7 @@ hl = {
     if command.kind == "move" then pip.at = { x = command.args.x, y = command.args.y } end
   end,
   dsp = { send_key_state = action("key"), focus = action("focus"),
-    window = { close = action("close"), move = action("move") } },
+    window = { close = action("close"), move = action("move"), fullscreen = action("fullscreen"), pin = action("pin") } },
 }
 local function emit(event)
   for _, callback in ipairs(events[event] or {}) do callback() end
@@ -58,6 +58,7 @@ end
 assert(load(source, "@/tmp/workflow test's clone/integrations/hyprland.lua"))()
 assert(#rules == 1 and rules[1].float and rules[1].pin)
 assert(bindings["ALT + G"] and bindings["CTRL + H"] and not bindings["ALT + J"])
+assert(not bindings["ALT + F"], "Browser Alt+F is handled directly by the content script")
 assert(pip.at.x == 1510, "Scaled PiP must fit the monitor")
 pip.at = { x = 100, y = 100 }
 run_timers(300)
@@ -68,9 +69,20 @@ assert(pip.at.x == 1510, "Correct delayed off-screen changes")
 active = other
 emit("window.active")
 assert(not bindings["ALT + G"] and not bindings["CTRL + H"])
+assert(not bindings["ALT + F"])
 active = pip
 emit("window.active")
 assert(bindings["ALT + P"] and not bindings["ALT + G"])
+bindings["ALT + F"]()
+assert(commands[#commands].kind == "fullscreen" and commands[#commands].args.window == "address:pip")
+assert(commands[#commands - 1].kind == "pin" and commands[#commands - 1].args.action == "unset")
+pip.fullscreen = 2
+pip.at.x = 1790
+run_timers(300)
+assert(pip.at.x == 1790, "Do not reposition fullscreen PiP")
+bindings["ALT + F"]()
+assert(commands[#commands].kind == "pin" and commands[#commands].args.action == "set")
+pip.fullscreen = 0
 bindings["ALT + P"]()
 assert(commands[#commands].kind == "close")
 run_timers(100)

@@ -90,10 +90,12 @@ do
   refresh_chromium_shortcuts()
 end
 
--- The separate PiP surface cannot receive the page extension's Alt+P handler.
+-- The separate PiP surface cannot receive the page extension's video handlers.
+
 do
   local installed = false
   local last_chromium_address = nil
+  local fullscreen_pins = {}
   local function is_pip(window)
     return window and window.floating
       and window.title:lower():match("^picture.?in.?picture$") ~= nil
@@ -104,7 +106,27 @@ do
     local wanted = not not is_pip(active)
     if wanted == installed then return end
     hl.unbind("ALT + P")
+    hl.unbind("ALT + F")
     if wanted then
+      bind("ALT + F", "PiP: Toggle fullscreen", function()
+        local window = hl.get_active_window()
+        if is_pip(window) then
+          local target = "address:" .. window.address
+          if (window.fullscreen or 0) ~= 0 then
+            hl.dispatch(hl.dsp.window.fullscreen({ window = target, mode = "fullscreen", action = "unset" }))
+            if fullscreen_pins[window.address] then
+              hl.dispatch(hl.dsp.window.pin({ window = target, action = "set" }))
+            end
+            fullscreen_pins[window.address] = nil
+          else
+            fullscreen_pins[window.address] = window.pinned
+            if window.pinned then
+              hl.dispatch(hl.dsp.window.pin({ window = target, action = "unset" }))
+            end
+            hl.dispatch(hl.dsp.window.fullscreen({ window = target, mode = "fullscreen", action = "set" }))
+          end
+        end
+      end)
       bind("ALT + P", "PiP: Return video to browser tab", function()
         local window = hl.get_active_window()
         if is_pip(window) then
@@ -162,7 +184,8 @@ end
 do
   local function keep_pip_visible()
     for _, window in ipairs(hl.get_windows()) do
-      if window.title:lower():match("^picture.?in.?picture$") and window.floating then
+      if window.title:lower():match("^picture.?in.?picture$") and window.floating
+          and (window.fullscreen or 0) == 0 then
         local monitor = window.monitor
         if monitor then
           local width = math.floor(monitor.width / monitor.scale + 0.5)

@@ -1,4 +1,16 @@
-// Run directly from the key event to retain the user gesture required for PiP.
+// Run directly from key events to retain the gesture needed by video APIs.
+function toggleVideoFullscreen() {
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(console.error);
+    return;
+  }
+  const video = [...document.querySelectorAll("video")]
+    .filter(video => video.readyState >= 2 && video.videoWidth > 0)
+    .sort((a, b) => Number(a.paused) - Number(b.paused)
+      || b.clientWidth * b.clientHeight - a.clientWidth * a.clientHeight)[0];
+  if (video && document.fullscreenEnabled) video.requestFullscreen().catch(console.error);
+}
+
 function togglePictureInPicture() {
   if (document.pictureInPictureElement) {
     document.exitPictureInPicture().catch(console.error);
@@ -28,6 +40,14 @@ function groupDirection(event) {
 
 for (const type of ["keydown", "keypress", "keyup"]) {
   window.addEventListener(type, event => {
+    const fullscreenKey = event.altKey && !event.ctrlKey && !event.shiftKey
+      && event.key.toLowerCase() === "f";
+    if (fullscreenKey && !event.metaKey && !event.isComposing) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (type === "keydown" && !event.repeat) toggleVideoFullscreen();
+      return;
+    }
     if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
         && !event.isComposing && event.key.toLowerCase() === "m") {
       event.preventDefault();
