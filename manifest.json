@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Tab Group Cycle",
-  "version": "1.19.0",
-  "description": "Cycle tabs within the current group using Alt+J and Alt+K.",
+  "name": "Chromium Workflow Shortcuts",
+  "version": "1.19.1",
+  "description": "Keyboard controls for tabs, groups, unloading, fullscreen, browser navigation, and video Picture-in-Picture.",
   "background": {
     "service_worker": "service-worker.js"
   },

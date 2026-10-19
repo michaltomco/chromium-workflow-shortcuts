@@ -1,4 +1,27 @@
-# Tab Group Cycle
+# Chromium Workflow Shortcuts
+
+Keyboard controls for Chromium tabs, groups, memory unloading, fullscreen,
+navigation, and video Picture-in-Picture.
+
+## Install
+
+Clone `git@github.com:michaltomco/chromium-workflow-shortcuts.git`, open
+`chrome://extensions`, enable Developer mode, and choose **Load unpacked** with
+the cloned directory. Configure the assignments from `command-shortcuts.json`
+at `chrome://extensions/shortcuts`; Chromium permits only four manifest defaults.
+
+Tab/group controls and browser commands run in the extension. The custom blank
+new-tab page and plain `t` search integration require Vimium C with this
+extension's ID in its external-command allowlist. The remaining native-key
+remaps, PiP positioning, and PiP focus-return helpers are optional Hyprland
+integration maintained in [the dotfiles repository](https://github.com/michaltomco/.dotfiles).
+`focus-newtab.sh` is used by that integration.
+
+On the original desktop, dotfiles includes this repository as a submodule at
+its existing load path to preserve the unpacked extension ID. After cloning
+dotfiles, run `git submodule update --init --recursive` before starting Chromium.
+
+## Behavior
 
 Local Manifest V3 extension. Alt+J selects the next tab in the current group;
 Alt+K selects the previous tab, wrapping at both ends. Ungrouped tabs form their
