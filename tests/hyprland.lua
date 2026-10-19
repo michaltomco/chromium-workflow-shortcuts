@@ -58,7 +58,7 @@ end
 assert(load(source, "@/tmp/workflow test's clone/integrations/hyprland.lua"))()
 assert(#rules == 1 and rules[1].float and rules[1].pin)
 assert(bindings["ALT + G"] and bindings["CTRL + H"] and not bindings["ALT + J"])
-assert(not bindings["ALT + K"], "Browser Alt+K is handled directly by the content script")
+assert(not bindings["ALT + P"], "Browser Alt+P is handled directly by the content script")
 assert(pip.at.x == 1510, "Scaled PiP must fit the monitor")
 pip.at = { x = 100, y = 100 }
 run_timers(300)
@@ -69,27 +69,27 @@ assert(pip.at.x == 1510, "Correct delayed off-screen changes")
 active = other
 emit("window.active")
 assert(not bindings["ALT + G"] and not bindings["CTRL + H"])
-assert(not bindings["ALT + K"])
+assert(not bindings["ALT + P"])
 active = pip
 emit("window.active")
-assert(bindings["ALT + SHIFT + K"] and not bindings["ALT + G"])
-bindings["ALT + K"]()
+assert(bindings["ALT + SHIFT + P"] and not bindings["ALT + G"])
+bindings["ALT + P"]()
 assert(commands[#commands].kind == "fullscreen" and commands[#commands].args.window == "address:pip")
 assert(commands[#commands - 1].kind == "pin" and commands[#commands - 1].args.action == "unset")
 pip.fullscreen = 2
 pip.at.x = 1790
 run_timers(300)
 assert(pip.at.x == 1790, "Do not reposition fullscreen PiP")
-bindings["ALT + K"]()
+bindings["ALT + P"]()
 assert(commands[#commands].kind == "pin" and commands[#commands].args.action == "set")
 pip.fullscreen = 0
-bindings["ALT + SHIFT + K"]()
+bindings["ALT + SHIFT + P"]()
 assert(commands[#commands].kind == "close")
 run_timers(100)
 assert(commands[#commands].kind == "focus" and commands[#commands].args.window == "address:browser")
 active = browser
 emit("window.active")
-assert(not bindings["ALT + SHIFT + K"])
+assert(not bindings["ALT + SHIFT + P"])
 browser.title = "Vimium New Tab - Chromium"
 emit("window.title")
 browser.title = "Blank Page - Chromium"
@@ -105,14 +105,14 @@ run_timers(650)
 assert(#commands == count, "Do not steal focus after switching apps")
 print("PASS: standalone loading, scoped bindings, PiP bounds and focus return, safe new-tab handoff")
 -- Exported settings can customize or disable desktop/PiP keys without Omarchy.
-chromium_workflow_shortcuts = { videoFullscreen = "ALT + F", pictureInPicture = "ALT + P", savePage = "" }
+chromium_workflow_shortcuts = { videoFullscreen = "ALT + F", pictureInPicture = "ALT + O", savePage = "" }
 bindings, events, timers, commands, rules = {}, {}, {}, {}, {}
 active = browser
 assert(load(source, "@/tmp/public clone/integrations/hyprland.lua"))()
 assert(not bindings["CTRL + ALT + SHIFT + S"])
 active = pip
 emit("window.active")
-assert(bindings["ALT + F"] and bindings["ALT + P"])
-assert(not bindings["ALT + K"] and not bindings["ALT + SHIFT + K"])
+assert(bindings["ALT + F"] and bindings["ALT + O"])
+assert(not bindings["ALT + P"] and not bindings["ALT + SHIFT + P"])
 chromium_workflow_shortcuts = nil
 print("PASS: exported Hyprland overrides and disabled keys")

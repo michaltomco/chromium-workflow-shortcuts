@@ -15,7 +15,7 @@ end
 local hotkeys = {
   verticalSidebar = "ALT + SHIFT + S", newGroup = "ALT + G",
   back = "CTRL + H", forward = "CTRL + L", savePage = "CTRL + ALT + SHIFT + S",
-  videoFullscreen = "ALT + K", pictureInPicture = "ALT + SHIFT + K",
+  videoFullscreen = "ALT + P", pictureInPicture = "ALT + SHIFT + P",
 }
 local overrides = rawget(_G, "chromium_workflow_shortcuts") or {}
 for name in pairs(hotkeys) do

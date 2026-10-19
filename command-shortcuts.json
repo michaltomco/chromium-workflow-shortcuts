@@ -15,5 +15,6 @@
   "close-current-tab": "Alt+W",
   "open-history": "Ctrl+Shift+H",
   "open-downloads": "Ctrl+Shift+Y",
-  "open-private-window": "Ctrl+Shift+P"
+  "open-private-window": "Ctrl+Shift+P",
+  "cycle-group-previous": "Alt+K"
 }

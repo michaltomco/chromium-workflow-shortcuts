@@ -67,7 +67,7 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
   assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("shortcutSettings")).shortcutSettings.page.videoFullscreen)()'),'');
   await page.evaluate('document.querySelector("#reset").click();document.querySelector("#save").click()');
   await waitFor(()=>page.evaluate('document.querySelector("#save").disabled'));
-  assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("shortcutSettings")).shortcutSettings.page.videoFullscreen)()'),'Alt+K');
+  assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("shortcutSettings")).shortcutSettings.page.videoFullscreen)()'),'Alt+P');
   // Export content is valid Lua and uses the saved video/PiP keys.
   fs.writeFileSync('/tmp/workflow-exported-shortcuts.lua',await page.evaluate('WorkflowShortcuts.toHyprland(draft)'));
   await page.evaluate('document.querySelector("#desktop-section").open=false');

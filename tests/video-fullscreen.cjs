@@ -22,7 +22,7 @@ vm.runInContext(fs.readFileSync('shortcut-config.js', 'utf8'), context);
 vm.runInContext(fs.readFileSync('keyboard.js', 'utf8'), context);
 
 function key(type, overrides = {}) {
-  const event = { key: 'k', code: 'KeyK', altKey: true, ctrlKey: false, shiftKey: false,
+  const event = { key: 'p', code: 'KeyP', altKey: true, ctrlKey: false, shiftKey: false,
     metaKey: false, isComposing: false, repeat: false,
     preventDefault() {}, stopImmediatePropagation() {}, ...overrides };
   listeners[type](event);
@@ -40,15 +40,15 @@ document.fullscreenElement = null;
 key('keydown');
 assert.equal(requested, 'playing');
 requested = null;
-key('keydown', { key: 'K', shiftKey: true });
+key('keydown', { key: 'P', shiftKey: true });
 assert.equal(pipRequests, 1);
 assert.equal(requested, null, 'PiP shortcut must not trigger fullscreen');
 document.pictureInPictureElement = {};
-key('keydown', { key: 'K', shiftKey: true });
+key('keydown', { key: 'P', shiftKey: true });
 assert.equal(pipExits, 1);
 document.pictureInPictureElement = null;
-key('keydown', { key: 'p', code: 'KeyP' });
-assert.equal(pipRequests, 1, 'Alt+P is no longer intercepted');
+key('keydown', { key: 'k', code: 'KeyK' });
+assert.equal(pipRequests, 1, 'Alt+K is no longer intercepted by video actions');
 document.querySelectorAll = () => [];
 key('keydown'); assert.equal(requested, null);
 document.querySelectorAll = () => [video('playing', false, 500)];

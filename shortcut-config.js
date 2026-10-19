@@ -1,7 +1,7 @@
 (() => {
   const pageActions = [
-    { id: 'videoFullscreen', label: 'Video fullscreen', hint: 'Toggle fullscreen for the playing video.', default: 'Alt+K' },
-    { id: 'pictureInPicture', label: 'Picture-in-Picture', hint: 'Pop a video out or return it to the page.', default: 'Alt+Shift+K' },
+    { id: 'videoFullscreen', label: 'Video fullscreen', hint: 'Toggle fullscreen for the playing video.', default: 'Alt+P' },
+    { id: 'pictureInPicture', label: 'Picture-in-Picture', hint: 'Pop a video out or return it to the page.', default: 'Alt+Shift+P' },
     { id: 'vimiumSearch', label: 'Search in a new tab', hint: 'Open Vimium C search outside text fields.', default: 'T', plain: true },
   ];
   const desktopActions = [
