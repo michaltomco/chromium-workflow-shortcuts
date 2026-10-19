@@ -46,9 +46,9 @@ such as Alt+P.
 
 ## Optional Hyprland integration
 
-The author's [dotfiles](https://github.com/michaltomco/.dotfiles) add PiP positioning,
-Alt+P from the PiP player to return focus to Chromium, new-tab focus handling,
-and these native browser mappings:
+The included [Hyprland integration](integrations/README.md) adds PiP positioning,
+Alt+P from the player to return focus to Chromium, new-tab focus handling,
+and these native browser mappings. It works without Omarchy or private dotfiles.
 
 | Shortcut | Action |
 | --- | --- |
@@ -57,5 +57,4 @@ and these native browser mappings:
 | Ctrl+H / Ctrl+L | Back / forward |
 | Ctrl+Alt+Shift+S | Save page |
 
-These helpers are separate from the extension. Dotfiles users should initialize
-its submodule with `git submodule update --init --recursive`.
+See [setup instructions](integrations/README.md#setup) to load the optional Lua file.
