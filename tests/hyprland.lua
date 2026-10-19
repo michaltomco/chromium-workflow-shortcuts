@@ -58,6 +58,7 @@ end
 assert(load(source, "@/tmp/workflow test's clone/integrations/hyprland.lua"))()
 assert(#rules == 1 and rules[1].float and rules[1].pin)
 assert(bindings["ALT + G"] and bindings["CTRL + H"] and not bindings["ALT + J"])
+assert(bindings["ALT + O"], "Split-view shortcut is installed for Chromium")
 assert(not bindings["ALT + P"], "Browser Alt+P is handled directly by the content script")
 assert(pip.at.x == 1510, "Scaled PiP must fit the monitor")
 pip.at = { x = 100, y = 100 }
@@ -69,6 +70,7 @@ assert(pip.at.x == 1510, "Correct delayed off-screen changes")
 active = other
 emit("window.active")
 assert(not bindings["ALT + G"] and not bindings["CTRL + H"])
+assert(not bindings["ALT + O"], "Split-view shortcut leaves other apps alone")
 assert(not bindings["ALT + P"])
 active = pip
 emit("window.active")

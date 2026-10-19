@@ -5,6 +5,7 @@
     { id: 'vimiumSearch', label: 'Search in a new tab', hint: 'Open Vimium C search outside text fields.', default: 'T', plain: true },
   ];
   const desktopActions = [
+    { id: 'splitView', label: 'Open split view', default: 'Alt+O' },
     { id: 'verticalSidebar', label: 'Vertical-tab sidebar', default: 'Alt+Shift+S' },
     { id: 'newGroup', label: 'Native group editor', default: 'Alt+G' },
     { id: 'back', label: 'Back', default: 'Ctrl+H' },

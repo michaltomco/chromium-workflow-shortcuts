@@ -75,3 +75,6 @@ and these native browser mappings. It works without Omarchy or private dotfiles.
 | Alt+P (PiP focused) | Toggle player fullscreen |
 
 See [setup instructions](integrations/README.md#setup) to load the optional Lua file.
+
+With the optional Hyprland integration, **Alt+O** opens native split view.
+On Chromium 152, separate it using the split-view menu; the shortcut does not toggle it off.
