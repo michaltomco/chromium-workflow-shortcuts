@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Group Cycle",
-  "version": "1.16.0",
+  "version": "1.19.0",
   "description": "Cycle tabs within the current group using Alt+J and Alt+K.",
   "background": {
     "service_worker": "service-worker.js"
@@ -20,21 +20,27 @@
     }
   ],
   "commands": {
+    "unload-collapse-next-group": {
+      "description": "Unload and collapse group, then switch to next"
+    },
+    "unload-current-tab": {
+      "description": "Unload current tab and switch to another tab"
+    },
     "cycle-group-next": {
       "suggested_key": {
-        "default": "Ctrl+Shift+9"
+        "default": "Alt+J"
       },
       "description": "Next tab in current group"
     },
     "cycle-group-previous": {
       "suggested_key": {
-        "default": "Ctrl+Shift+8"
+        "default": "Alt+K"
       },
       "description": "Previous tab in current group"
     },
     "create-group-tab": {
       "suggested_key": {
-        "default": "Ctrl+Shift+7"
+        "default": "Alt+T"
       },
       "description": "New tab in current group"
     },
@@ -46,7 +52,7 @@
     },
     "create-ungrouped-tab": {
       "suggested_key": {
-        "default": "Ctrl+Shift+6"
+        "default": "Alt+Shift+T"
       },
       "description": "New ungrouped tab"
     },
@@ -61,6 +67,27 @@
     },
     "mute-collapse-next-group": {
       "description": "Mute and collapse group, then switch to next"
+    },
+    "toggle-fullscreen": {
+      "description": "Toggle fullscreen"
+    },
+    "move-tab-next": {
+      "description": "Move tab down"
+    },
+    "move-tab-previous": {
+      "description": "Move tab up"
+    },
+    "close-current-tab": {
+      "description": "Close current tab"
+    },
+    "open-history": {
+      "description": "Open history"
+    },
+    "open-downloads": {
+      "description": "Open downloads"
+    },
+    "open-private-window": {
+      "description": "Open private window"
     }
   },
   "chrome_url_overrides": {

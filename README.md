@@ -20,12 +20,9 @@ export includes that entry. This does not intercept typing in text fields.
 
 Loaded by `~/.config/chromium-flags.conf` after fully exiting and reopening
 Chromium. Shortcuts can be checked at `chrome://extensions/shortcuts`.
-Hyprland captures Alt+J/K in Chromium and sends Ctrl+Shift+9/8 to the extension.
-Alt+H/L send Ctrl+Shift+4/5. Assign these two section-switching shortcuts once in
-`chrome://extensions/shortcuts` when installing the extension on a new profile.
-This prevents websites and other extensions from using the original keys for
-scrolling. The document-start listener also handles Alt+J/K when used without
-the compositor mappings.
+Custom browser shortcuts run directly through extension commands, including
+Alt+J/K, Alt+H/L, Alt+T, and Alt+Shift+T. See `command-shortcuts.json` for
+the complete mapping to restore in Chromium's extension shortcut settings.
 The launch flag points directly to this repository directory: Chromium did not
 load content scripts through the individually Stow-linked resource files.
 
@@ -99,3 +96,33 @@ When Alt+C collapses the current group, it also advances like Alt+L to the next
 expanded group or ungrouped tabs, wrapping at the end. Expanding a group does not
 advance. If no other eligible section exists, focus remains on the current tab.
 Alt+Shift+C remains expand-all and does not change focus.
+
+## Native browser shortcut registration
+
+`command-shortcuts.json` records the browser-scoped command assignments registered
+at `chrome://extensions/shortcuts` for this unpacked extension. The manifest sets
+four defaults (Chromium's maximum); the remaining keys are user assignments.
+Keep the JSON map in sync when changing those assignments.
+
+Most custom shortcuts run directly through `chrome.commands` and browser APIs.
+Alt+D uses Chromium's built-in address-bar shortcut.
+
+Five mappings remain in `hypr/bindings.lua` to preserve native behavior:
+
+- Alt+Shift+S: native vertical-tab sidebar toggle (no extension API).
+- Alt+G: native group editor and naming popup (no extension API).
+- Ctrl+H / Ctrl+L: Back / Forward, replacing browser-reserved shortcuts.
+- Ctrl+Alt+Shift+S: native Save Page dialog (no extension API; Ctrl+Alt
+  combinations are also unavailable to extension commands).
+
+These desktop mappings are installed only while Chromium is focused.
+
+Alt+U switches away from the current tab, then unloads it. Alt+Shift+U switches
+to the next eligible section, turns the current group grey, collapses it, and
+unloads its tabs. If no other eligible section exists, it opens a blank tab
+first. Selecting an unloaded tab reloads it; unloading does not close tabs.
+
+While the separate PiP player is focused, Hyprland handles Alt+P to close it
+and return focus to its Chromium window. The PiP bounds check keeps the player
+fully on-screen after asynchronous size changes, preserving visible manual
+placement. These PiP helpers also match the player's empty window class.

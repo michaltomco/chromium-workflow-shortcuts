@@ -1,5 +1,25 @@
 const lastCollapsedGroupByWindow = new Map();
 
+async function unloadCurrentTab() {
+  const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  if (!active) return;
+  const tabs = await chrome.tabs.query({ windowId: active.windowId });
+  const groups = await chrome.tabGroups.query({ windowId: active.windowId });
+  const collapsed = new Set(groups.filter(group => group.collapsed).map(group => group.id));
+  const candidates = tabs.filter(tab => tab.id !== active.id && !collapsed.has(tab.groupId));
+  // Prefer a loaded neighbour in the same group; create a blank tab if alone.
+  candidates.sort((a, b) => Number(a.discarded) - Number(b.discarded)
+    || Number(b.groupId === active.groupId) - Number(a.groupId === active.groupId)
+    || Math.abs(a.index - active.index) - Math.abs(b.index - active.index));
+  if (candidates.length) {
+    await chrome.tabs.update(candidates[0].id, { active: true });
+  } else {
+    await chrome.tabs.create({ windowId: active.windowId, url: "about:blank", active: true });
+  }
+  // An explicit ID prevents accidentally discarding an unrelated tab.
+  await chrome.tabs.discard(active.id);
+}
+
 async function expandAllGroups(sourceTabId) {
   const active = sourceTabId === undefined
     ? (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]
@@ -140,6 +160,25 @@ async function muteCollapseAndAdvance(sourceTabId) {
   lastCollapsedGroupByWindow.set(active.windowId, { groupId: active.groupId, tabId: active.id });
 }
 
+async function unloadCollapseAndAdvance() {
+  const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  if (!active?.active || active.groupId < 0) return;
+  const tabs = await chrome.tabs.query({ windowId: active.windowId, groupId: active.groupId });
+  await cycleTabSection(1, active.id);
+  const [destination] = await chrome.tabs.query({ active: true, windowId: active.windowId });
+  // With no other expanded section, move outside the group before unloading.
+  if (!destination || destination.groupId === active.groupId) {
+    await chrome.tabs.create({ windowId: active.windowId, url: "about:blank", active: true });
+  }
+  await chrome.tabGroups.update(active.groupId, { collapsed: true, color: "grey" });
+  lastCollapsedGroupByWindow.set(active.windowId, { groupId: active.groupId, tabId: active.id });
+  const results = await Promise.allSettled(tabs.filter(tab => !tab.discarded)
+    .map(tab => chrome.tabs.discard(tab.id)));
+  for (const result of results) {
+    if (result.status === "rejected") console.error("Could not unload group tab", result.reason);
+  }
+}
+
 async function cycleTabInGroup(direction, sourceTabId) {
   const active = sourceTabId === undefined
     ? (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]
@@ -214,6 +253,35 @@ async function cycleTabSection(direction, sourceTabId) {
 }
 
 // Serialize rapid keypresses so each one advances from the preceding result.
+const fullscreenPreviousStates = new Map();
+const browserCommandActions = {
+  "toggle-fullscreen": async () => {
+    const window = await chrome.windows.getLastFocused();
+    const state = window.state === "fullscreen"
+      ? fullscreenPreviousStates.get(window.id) || "normal" : "fullscreen";
+    if (state === "fullscreen") fullscreenPreviousStates.set(window.id, window.state);
+    await chrome.windows.update(window.id, { state });
+  },
+  "move-tab-next": () => moveCurrentTab(1),
+  "move-tab-previous": () => moveCurrentTab(-1),
+  "close-current-tab": async () => {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (tab) await chrome.tabs.remove(tab.id);
+  },
+  "open-history": () => chrome.tabs.create({ url: "chrome://history/" }),
+  "open-downloads": () => chrome.tabs.create({ url: "chrome://downloads/" }),
+  "open-private-window": () => chrome.windows.create({ incognito: true })
+};
+
+async function moveCurrentTab(direction) {
+  const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  if (!active) return;
+  const tabs = await chrome.tabs.query({ windowId: active.windowId });
+  const neighbour = tabs.find(tab => tab.index === active.index + direction);
+  if (!neighbour || neighbour.pinned !== active.pinned) return;
+  await chrome.tabs.move(active.id, { index: neighbour.index });
+}
+
 let pending = Promise.resolve();
 let lastCommand = null;
 function enqueueCycle(direction, sourceTabId) {
@@ -222,6 +290,18 @@ function enqueueCycle(direction, sourceTabId) {
 }
 chrome.commands.onCommand.addListener(command => {
   lastCommand = command;
+  if (Object.hasOwn(browserCommandActions, command)) {
+    pending = pending.then(browserCommandActions[command]).catch(console.error);
+    return;
+  }
+  if (command === "unload-collapse-next-group") {
+    pending = pending.then(() => unloadCollapseAndAdvance()).catch(console.error);
+    return;
+  }
+  if (command === "unload-current-tab") {
+    pending = pending.then(() => unloadCurrentTab()).catch(console.error);
+    return;
+  }
   if (command === "mute-collapse-next-group") {
     pending = pending.then(() => muteCollapseAndAdvance()).catch(console.error);
     return;

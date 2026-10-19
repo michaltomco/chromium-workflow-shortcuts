@@ -1,0 +1,21 @@
+{
+  "cycle-group-next": "Alt+J",
+  "cycle-group-previous": "Alt+K",
+  "previous-tab-section": "Alt+H",
+  "next-tab-section": "Alt+L",
+  "create-group-tab": "Alt+T",
+  "create-ungrouped-tab": "Alt+Shift+T",
+  "toggle-group-mute": "Alt+M",
+  "toggle-group-collapse": "Alt+C",
+  "expand-all-groups": "Alt+Shift+C",
+  "mute-collapse-next-group": "Alt+Shift+M",
+  "unload-current-tab": "Alt+U",
+  "unload-collapse-next-group": "Alt+Shift+U",
+  "toggle-fullscreen": "Alt+S",
+  "move-tab-next": "Alt+Shift+J",
+  "move-tab-previous": "Alt+Shift+K",
+  "close-current-tab": "Alt+W",
+  "open-history": "Ctrl+Shift+H",
+  "open-downloads": "Ctrl+Shift+Y",
+  "open-private-window": "Ctrl+Shift+P"
+}
