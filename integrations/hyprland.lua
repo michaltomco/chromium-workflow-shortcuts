@@ -105,10 +105,10 @@ do
     if active and active.class == "chromium" then last_chromium_address = active.address end
     local wanted = not not is_pip(active)
     if wanted == installed then return end
-    hl.unbind("ALT + P")
-    hl.unbind("ALT + SHIFT + F")
+    hl.unbind("ALT + SHIFT + K")
+    hl.unbind("ALT + K")
     if wanted then
-      bind("ALT + SHIFT + F", "PiP: Toggle fullscreen", function()
+      bind("ALT + K", "PiP: Toggle fullscreen", function()
         local window = hl.get_active_window()
         if is_pip(window) then
           local target = "address:" .. window.address
@@ -127,7 +127,7 @@ do
           end
         end
       end)
-      bind("ALT + P", "PiP: Return video to browser tab", function()
+      bind("ALT + SHIFT + K", "PiP: Return video to browser tab", function()
         local window = hl.get_active_window()
         if is_pip(window) then
           local browser = last_chromium_address

@@ -26,7 +26,7 @@ function togglePictureInPicture() {
   video.requestPictureInPicture().catch(console.error);
 }
 
-// Register before page scripts so websites cannot reserve Alt+J/K first.
+// Register before page scripts so websites cannot claim these shortcuts first.
 function groupDirection(event) {
   if (event.metaKey || event.isComposing) return 0;
   if (event.ctrlKey && event.shiftKey && !event.altKey) {
@@ -35,13 +35,13 @@ function groupDirection(event) {
   }
   if (!event.altKey || event.ctrlKey || event.shiftKey) return 0;
   const key = event.key.toLowerCase();
-  return key === "j" ? 1 : key === "k" ? -1 : 0;
+  return key === "j" ? 1 : 0;
 }
 
 for (const type of ["keydown", "keypress", "keyup"]) {
   window.addEventListener(type, event => {
-    const fullscreenKey = event.altKey && !event.ctrlKey && event.shiftKey
-      && event.key.toLowerCase() === "f";
+    const fullscreenKey = event.altKey && !event.ctrlKey && !event.shiftKey
+      && event.key.toLowerCase() === "k";
     if (fullscreenKey && !event.metaKey && !event.isComposing) {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -84,8 +84,8 @@ for (const type of ["keydown", "keypress", "keyup"]) {
       }
       return;
     }
-    if (event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey
-        && !event.isComposing && event.key.toLowerCase() === "p") {
+    if (event.altKey && !event.ctrlKey && event.shiftKey && !event.metaKey
+        && !event.isComposing && event.key.toLowerCase() === "k") {
       event.preventDefault();
       event.stopImmediatePropagation();
       if (type === "keydown" && !event.repeat) togglePictureInPicture();

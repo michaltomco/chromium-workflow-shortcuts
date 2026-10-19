@@ -11,17 +11,17 @@ Keyboard controls for tabs, groups, memory unloading, and video Picture-in-Pictu
 
 **Vimium C is required for the replacement new-tab page and `t` search.** Add this
 extension's ID to Vimium C's external-command allowlist. Remove conflicting
-Vimium bindings for Alt+P, Alt+M, Alt+C, and Alt+Shift+C if present.
+Vimium bindings for Alt+Shift+K, Alt+M, Alt+C, and Alt+Shift+C if present.
 
 ## Shortcuts
 
 | Shortcut | Action |
 | --- | --- |
-| Alt+J / Alt+K | Next / previous tab in the current group |
+| Alt+J | Next tab in the current group |
 | Alt+H / Alt+L | Previous / next group, skipping collapsed groups |
 | Alt+T | New tab in the current group |
 | Alt+Shift+T | New ungrouped tab |
-| Alt+Shift+J / Alt+Shift+K | Move tab down / up |
+| Alt+Shift+J | Move tab down |
 | Alt+W | Close tab |
 | Alt+U | Unload tab and switch away |
 | Alt+Shift+U | Unload group, turn it grey, collapse it, and switch away |
@@ -29,8 +29,8 @@ Vimium bindings for Alt+P, Alt+M, Alt+C, and Alt+Shift+C if present.
 | Alt+Shift+M | Mute group, collapse it, and switch away |
 | Alt+C | Collapse / expand group |
 | Alt+Shift+C | Expand all groups |
-| Alt+P | Toggle Picture-in-Picture for a video on the page |
-| Alt+Shift+F | Toggle video fullscreen |
+| Alt+Shift+K | Toggle Picture-in-Picture for a video on the page |
+| Alt+K | Toggle video fullscreen |
 | Alt+S | Toggle fullscreen |
 | Ctrl+Shift+H | Open history |
 | Ctrl+Shift+Y | Open downloads |
@@ -39,16 +39,18 @@ Vimium bindings for Alt+P, Alt+M, Alt+C, and Alt+Shift+C if present.
 
 Tab and group navigation wraps within the current window; ungrouped tabs form
 one section. Collapsing a group switches to the next available section.
+Previous-tab and move-tab-up commands are unassigned; choose other keys for them
+in Chromium's extension shortcut settings if needed.
 Unloaded tabs stay in the sidebar and reload when selected. Muted groups show
 `🔇` and turn grey; unmuting restores their original colour.
 
 After reloading the extension, refresh existing pages to reactivate page shortcuts
-such as Alt+P and Alt+Shift+F.
+such as Alt+Shift+K and Alt+K.
 
 ## Optional Hyprland integration
 
 The included [Hyprland integration](integrations/README.md) adds PiP positioning,
-Alt+P from the player to return focus to Chromium, new-tab focus handling,
+Alt+Shift+K from the player to return focus to Chromium, new-tab focus handling,
 and these native browser mappings. It works without Omarchy or private dotfiles.
 
 | Shortcut | Action |
@@ -57,6 +59,6 @@ and these native browser mappings. It works without Omarchy or private dotfiles.
 | Alt+G | Open native group-name editor |
 | Ctrl+H / Ctrl+L | Back / forward |
 | Ctrl+Alt+Shift+S | Save page |
-| Alt+Shift+F (PiP focused) | Toggle player fullscreen |
+| Alt+K (PiP focused) | Toggle player fullscreen |
 
 See [setup instructions](integrations/README.md#setup) to load the optional Lua file.

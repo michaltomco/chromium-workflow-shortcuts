@@ -58,7 +58,7 @@ end
 assert(load(source, "@/tmp/workflow test's clone/integrations/hyprland.lua"))()
 assert(#rules == 1 and rules[1].float and rules[1].pin)
 assert(bindings["ALT + G"] and bindings["CTRL + H"] and not bindings["ALT + J"])
-assert(not bindings["ALT + SHIFT + F"], "Browser Alt+Shift+F is handled directly by the content script")
+assert(not bindings["ALT + K"], "Browser Alt+K is handled directly by the content script")
 assert(pip.at.x == 1510, "Scaled PiP must fit the monitor")
 pip.at = { x = 100, y = 100 }
 run_timers(300)
@@ -69,27 +69,27 @@ assert(pip.at.x == 1510, "Correct delayed off-screen changes")
 active = other
 emit("window.active")
 assert(not bindings["ALT + G"] and not bindings["CTRL + H"])
-assert(not bindings["ALT + SHIFT + F"])
+assert(not bindings["ALT + K"])
 active = pip
 emit("window.active")
-assert(bindings["ALT + P"] and not bindings["ALT + G"])
-bindings["ALT + SHIFT + F"]()
+assert(bindings["ALT + SHIFT + K"] and not bindings["ALT + G"])
+bindings["ALT + K"]()
 assert(commands[#commands].kind == "fullscreen" and commands[#commands].args.window == "address:pip")
 assert(commands[#commands - 1].kind == "pin" and commands[#commands - 1].args.action == "unset")
 pip.fullscreen = 2
 pip.at.x = 1790
 run_timers(300)
 assert(pip.at.x == 1790, "Do not reposition fullscreen PiP")
-bindings["ALT + SHIFT + F"]()
+bindings["ALT + K"]()
 assert(commands[#commands].kind == "pin" and commands[#commands].args.action == "set")
 pip.fullscreen = 0
-bindings["ALT + P"]()
+bindings["ALT + SHIFT + K"]()
 assert(commands[#commands].kind == "close")
 run_timers(100)
 assert(commands[#commands].kind == "focus" and commands[#commands].args.window == "address:browser")
 active = browser
 emit("window.active")
-assert(not bindings["ALT + P"])
+assert(not bindings["ALT + SHIFT + K"])
 browser.title = "Vimium New Tab - Chromium"
 emit("window.title")
 browser.title = "Blank Page - Chromium"

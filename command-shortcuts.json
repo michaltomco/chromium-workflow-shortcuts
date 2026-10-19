@@ -1,6 +1,5 @@
 {
   "cycle-group-next": "Alt+J",
-  "cycle-group-previous": "Alt+K",
   "previous-tab-section": "Alt+H",
   "next-tab-section": "Alt+L",
   "create-group-tab": "Alt+T",
@@ -13,7 +12,6 @@
   "unload-collapse-next-group": "Alt+Shift+U",
   "toggle-fullscreen": "Alt+S",
   "move-tab-next": "Alt+Shift+J",
-  "move-tab-previous": "Alt+Shift+K",
   "close-current-tab": "Alt+W",
   "open-history": "Ctrl+Shift+H",
   "open-downloads": "Ctrl+Shift+Y",

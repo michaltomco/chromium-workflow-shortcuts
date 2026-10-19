@@ -34,10 +34,10 @@ Chromium version.
 | Chromium | Alt+G | Open the native group-name editor |
 | Chromium | Ctrl+H / Ctrl+L | Back / forward |
 | Chromium | Ctrl+Alt+Shift+S | Save page |
-| PiP player | Alt+P | Return video and focus to Chromium |
-| PiP player | Alt+Shift+F | Toggle player fullscreen |
+| PiP player | Alt+Shift+K | Return video and focus to Chromium |
+| PiP player | Alt+K | Toggle player fullscreen |
 
-Press Alt+Shift+F again to leave fullscreen; PiP's pin is restored on exit. Refresh existing video pages after
+Press Alt+K again to leave fullscreen; PiP's pin is restored on exit. Refresh existing video pages after
 updating the extension to load its new video shortcut.
 
 The module also floats and pins PiP, keeps it within the scaled monitor bounds,

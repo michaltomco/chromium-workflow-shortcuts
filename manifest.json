@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chromium Workflow Shortcuts",
-  "version": "1.20.1",
+  "version": "1.21.0",
   "description": "Keyboard controls for tabs, groups, unloading, fullscreen, browser navigation, and video Picture-in-Picture.",
   "background": {
     "service_worker": "service-worker.js"
@@ -33,9 +33,6 @@
       "description": "Next tab in current group"
     },
     "cycle-group-previous": {
-      "suggested_key": {
-        "default": "Alt+K"
-      },
       "description": "Previous tab in current group"
     },
     "create-group-tab": {
