@@ -52,3 +52,15 @@ shortcuts stay registered in Chromium.
 
 Remove the `dofile(...)` line and reload Hyprland. The browser extension can stay
 installed independently.
+
+## Customize keys
+
+Open the extension's settings, expand **Hyprland controls**, and record your keys.
+Save, then choose **Download Hyprland config**. Paste the downloaded
+`chromium_workflow_shortcuts = { ... }` block immediately above the existing
+`dofile(...)` line and run `hyprctl reload`.
+
+PiP uses the settings page's video fullscreen and Picture-in-Picture keys.
+Changing those page keys applies immediately on websites; apply the exported
+configuration to update the separate PiP window as well. Empty keys disable actions.
+The integration leaves its custom browser remaps inactive on the settings page.

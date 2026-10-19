@@ -288,7 +288,29 @@ function enqueueCycle(direction, sourceTabId) {
   pending = pending.then(() => cycleTabInGroup(direction, sourceTabId)).catch(console.error);
   return pending;
 }
+async function captureRegisteredShortcut(command) {
+  const { shortcutCapture } = await chrome.storage.session.get("shortcutCapture");
+  if (!shortcutCapture) return false;
+  const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  if (active?.id !== shortcutCapture.tabId) return false;
+  const contexts = await chrome.runtime.getContexts({ contextTypes: ["TAB"],
+    documentUrls: [chrome.runtime.getURL("options.html")] });
+  if (!contexts.some(context => context.tabId === active.id)) {
+    await chrome.storage.session.remove("shortcutCapture");
+    return false;
+  }
+  const binding = (await chrome.commands.getAll()).find(item => item.name === command);
+  await chrome.runtime.sendMessage({ type: "shortcut-capture-conflict", tabId: active.id,
+    shortcut: binding?.shortcut || "This shortcut", action: binding?.description || command }).catch(() => {});
+  return true;
+}
+let commandCaptureQueue = Promise.resolve();
 chrome.commands.onCommand.addListener(command => {
+  commandCaptureQueue = commandCaptureQueue.then(async () => {
+    if (!await captureRegisteredShortcut(command)) dispatchRegisteredCommand(command);
+  }).catch(console.error);
+});
+function dispatchRegisteredCommand(command) {
   lastCommand = command;
   if (Object.hasOwn(browserCommandActions, command)) {
     pending = pending.then(browserCommandActions[command]).catch(console.error);
@@ -330,9 +352,23 @@ chrome.commands.onCommand.addListener(command => {
     : command === "cycle-group-previous" ? -1 : 0;
   if (!direction) return;
   enqueueCycle(direction);
-});
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === "set-shortcut-capture" && sender.url === chrome.runtime.getURL("options.html")
+      && Number.isInteger(message.tabId)) {
+    (async () => {
+      const contexts = await chrome.runtime.getContexts({ contextTypes: ["TAB"],
+        documentUrls: [chrome.runtime.getURL("options.html")] });
+      const tab = contexts.find(context => context.tabId === message.tabId);
+      if (!tab) throw new Error("Invalid settings tab");
+      const { shortcutCapture } = await chrome.storage.session.get("shortcutCapture");
+      if (message.active) await chrome.storage.session.set({ shortcutCapture: { tabId: tab.tabId } });
+      else if (shortcutCapture?.tabId === tab.tabId) await chrome.storage.session.remove("shortcutCapture");
+      sendResponse({ ok: true });
+    })().catch(error => sendResponse({ error: error.message }));
+    return true;
+  }
   if (message?.type === "group-cycle-diagnostics" && !sender.tab?.url?.startsWith("http")) {
     sendResponse({ workerVersion: chrome.runtime.getManifest().version, lastCommand });
     return;
@@ -395,3 +431,6 @@ chrome.tabGroups.onCreated.addListener(scheduleMuteIndicatorSync);
 chrome.tabGroups.onUpdated.addListener(scheduleMuteIndicatorSync);
 chrome.tabGroups.onRemoved.addListener(scheduleMuteIndicatorSync);
 scheduleMuteIndicatorSync();
+
+// The toolbar button opens the extension's shortcut settings.
+chrome.action.onClicked.addListener(() => chrome.runtime.openOptionsPage());

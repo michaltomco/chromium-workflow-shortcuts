@@ -11,6 +11,20 @@ local function bind(keys, description, callback)
   hl.bind(keys, callback, { description = description })
 end
 
+-- Optional overrides exported by the extension's settings page.
+local hotkeys = {
+  verticalSidebar = "ALT + SHIFT + S", newGroup = "ALT + G",
+  back = "CTRL + H", forward = "CTRL + L", savePage = "CTRL + ALT + SHIFT + S",
+  videoFullscreen = "ALT + K", pictureInPicture = "ALT + SHIFT + K",
+}
+local overrides = rawget(_G, "chromium_workflow_shortcuts") or {}
+for name in pairs(hotkeys) do
+  if overrides[name] ~= nil then
+    assert(type(overrides[name]) == "string", "Invalid shortcut for " .. name)
+    hotkeys[name] = overrides[name]
+  end
+end
+
 -- Standalone Hyprland needs these rules; Omarchy already supplies equivalents.
 hl.window_rule({
   name = "chromium-workflow-pip",
@@ -46,19 +60,23 @@ end
 -- Install only while Chromium is focused so other apps keep their shortcuts.
 do
   local shortcuts = {
-    { "ALT + SHIFT + S", "Toggle vertical tab sidebar", "CTRL + SHIFT", "L" },
-    { "ALT + G", "New tab group", "ALT + SHIFT", "P" },
+    { hotkeys.verticalSidebar, "Toggle vertical tab sidebar", "CTRL + SHIFT", "L" },
+    { hotkeys.newGroup, "New tab group", "ALT + SHIFT", "P" },
     -- Other Chromium shortcuts are registered directly by the extension.
     -- Alt+D already focuses Chromium's address bar without a remap.
     -- Ctrl+J/K reach Vimium C for Vomnibar suggestion navigation.
-    { "CTRL + H", "Back", "ALT", "Left" },
-    { "CTRL + L", "Forward", "ALT", "Right" },
-    { "CTRL + ALT + SHIFT + S", "Save page", "CTRL", "S" },
+    { hotkeys.back, "Back", "ALT", "Left" },
+    { hotkeys.forward, "Forward", "ALT", "Right" },
+    { hotkeys.savePage, "Save page", "CTRL", "S" },
   }
+  for i = #shortcuts, 1, -1 do
+    if shortcuts[i][1] == "" then table.remove(shortcuts, i) end
+  end
   local installed = false
   local function refresh_chromium_shortcuts()
     local window = hl.get_active_window()
     local wanted = window ~= nil and window.class == "chromium"
+      and not window.title:find("Shortcut settings · Chromium Workflow Shortcuts", 1, true)
     if chromium_group_naming and (not wanted or window.address ~= chromium_group_naming) then
       chromium_group_naming = nil
       hl.unbind("RETURN")
@@ -68,7 +86,7 @@ do
       hl.unbind(shortcut[1])
       if wanted then
         bind(shortcut[1], "Chromium: " .. shortcut[2], function()
-          if shortcut[1] == "ALT + G" then
+          if shortcut[1] == hotkeys.newGroup then
             local active = hl.get_active_window()
             chromium_group_naming = active and active.address or nil
             hl.unbind("RETURN")
@@ -86,6 +104,7 @@ do
     installed = wanted
   end
   hl.on("window.active", refresh_chromium_shortcuts)
+  hl.on("window.title", refresh_chromium_shortcuts)
   hl.on("config.reloaded", refresh_chromium_shortcuts)
   refresh_chromium_shortcuts()
 end
@@ -105,53 +124,57 @@ do
     if active and active.class == "chromium" then last_chromium_address = active.address end
     local wanted = not not is_pip(active)
     if wanted == installed then return end
-    hl.unbind("ALT + SHIFT + K")
-    hl.unbind("ALT + K")
+    if hotkeys.pictureInPicture ~= "" then hl.unbind(hotkeys.pictureInPicture) end
+    if hotkeys.videoFullscreen ~= "" then hl.unbind(hotkeys.videoFullscreen) end
     if wanted then
-      bind("ALT + K", "PiP: Toggle fullscreen", function()
-        local window = hl.get_active_window()
-        if is_pip(window) then
-          local target = "address:" .. window.address
-          if (window.fullscreen or 0) ~= 0 then
-            hl.dispatch(hl.dsp.window.fullscreen({ window = target, mode = "fullscreen", action = "unset" }))
-            if fullscreen_pins[window.address] then
-              hl.dispatch(hl.dsp.window.pin({ window = target, action = "set" }))
+      if hotkeys.videoFullscreen ~= "" then
+        bind(hotkeys.videoFullscreen, "PiP: Toggle fullscreen", function()
+          local window = hl.get_active_window()
+          if is_pip(window) then
+            local target = "address:" .. window.address
+            if (window.fullscreen or 0) ~= 0 then
+              hl.dispatch(hl.dsp.window.fullscreen({ window = target, mode = "fullscreen", action = "unset" }))
+              if fullscreen_pins[window.address] then
+                hl.dispatch(hl.dsp.window.pin({ window = target, action = "set" }))
+              end
+              fullscreen_pins[window.address] = nil
+            else
+              fullscreen_pins[window.address] = window.pinned
+              if window.pinned then
+                hl.dispatch(hl.dsp.window.pin({ window = target, action = "unset" }))
+              end
+              hl.dispatch(hl.dsp.window.fullscreen({ window = target, mode = "fullscreen", action = "set" }))
             end
-            fullscreen_pins[window.address] = nil
-          else
-            fullscreen_pins[window.address] = window.pinned
-            if window.pinned then
-              hl.dispatch(hl.dsp.window.pin({ window = target, action = "unset" }))
-            end
-            hl.dispatch(hl.dsp.window.fullscreen({ window = target, mode = "fullscreen", action = "set" }))
           end
-        end
-      end)
-      bind("ALT + SHIFT + K", "PiP: Return video to browser tab", function()
-        local window = hl.get_active_window()
-        if is_pip(window) then
-          local browser = last_chromium_address
-            and hl.get_window("address:" .. last_chromium_address) or nil
-          if not browser or browser.class ~= "chromium" or browser.pid ~= window.pid then
-            browser = nil
-            for _, candidate in ipairs(hl.get_windows()) do
-              if candidate.class == "chromium" and candidate.pid == window.pid
-                  and (not browser or candidate.focus_history_id < browser.focus_history_id) then
-                browser = candidate
+        end)
+      end
+      if hotkeys.pictureInPicture ~= "" then
+        bind(hotkeys.pictureInPicture, "PiP: Return video to browser tab", function()
+          local window = hl.get_active_window()
+          if is_pip(window) then
+            local browser = last_chromium_address
+              and hl.get_window("address:" .. last_chromium_address) or nil
+            if not browser or browser.class ~= "chromium" or browser.pid ~= window.pid then
+              browser = nil
+              for _, candidate in ipairs(hl.get_windows()) do
+                if candidate.class == "chromium" and candidate.pid == window.pid
+                    and (not browser or candidate.focus_history_id < browser.focus_history_id) then
+                  browser = candidate
+                end
               end
             end
+            local browser_address = browser and browser.address
+            hl.dispatch(hl.dsp.window.close({ window = "address:" .. window.address }))
+            if browser_address then
+              hl.timer(function()
+                if hl.get_window("address:" .. browser_address) then
+                  hl.dispatch(hl.dsp.focus({ window = "address:" .. browser_address }))
+                end
+              end, { timeout = 100, type = "oneshot" })
+            end
           end
-          local browser_address = browser and browser.address
-          hl.dispatch(hl.dsp.window.close({ window = "address:" .. window.address }))
-          if browser_address then
-            hl.timer(function()
-              if hl.get_window("address:" .. browser_address) then
-                hl.dispatch(hl.dsp.focus({ window = "address:" .. browser_address }))
-              end
-            end, { timeout = 100, type = "oneshot" })
-          end
-        end
-      end)
+        end)
+      end
     end
     installed = wanted
   end

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chromium Workflow Shortcuts",
-  "version": "1.21.0",
+  "version": "1.22.0",
   "description": "Keyboard controls for tabs, groups, unloading, fullscreen, browser navigation, and video Picture-in-Picture.",
   "background": {
     "service_worker": "service-worker.js"
@@ -12,8 +12,10 @@
         "<all_urls>"
       ],
       "js": [
+        "shortcut-config.js",
         "keyboard.js"
       ],
+      "css": ["video-fullscreen.css"],
       "run_at": "document_start",
       "all_frames": true,
       "match_about_blank": true
@@ -93,5 +95,13 @@
   "permissions": [
     "tabGroups",
     "storage"
-  ]
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_title": "Shortcut settings"
+  },
+  "minimum_chrome_version": "116"
 }

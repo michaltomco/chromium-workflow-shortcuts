@@ -104,3 +104,15 @@ active = other
 run_timers(650)
 assert(#commands == count, "Do not steal focus after switching apps")
 print("PASS: standalone loading, scoped bindings, PiP bounds and focus return, safe new-tab handoff")
+-- Exported settings can customize or disable desktop/PiP keys without Omarchy.
+chromium_workflow_shortcuts = { videoFullscreen = "ALT + F", pictureInPicture = "ALT + P", savePage = "" }
+bindings, events, timers, commands, rules = {}, {}, {}, {}, {}
+active = browser
+assert(load(source, "@/tmp/public clone/integrations/hyprland.lua"))()
+assert(not bindings["CTRL + ALT + SHIFT + S"])
+active = pip
+emit("window.active")
+assert(bindings["ALT + F"] and bindings["ALT + P"])
+assert(not bindings["ALT + K"] and not bindings["ALT + SHIFT + K"])
+chromium_workflow_shortcuts = nil
+print("PASS: exported Hyprland overrides and disabled keys")

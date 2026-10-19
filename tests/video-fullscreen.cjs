@@ -13,9 +13,14 @@ const document = { fullscreenElement: null, fullscreenEnabled: true,
   exitPictureInPicture() { pipExits++; return Promise.resolve(); },
   querySelectorAll: () => [video('paused', true, 1000), video('playing', false, 500)],
   exitFullscreen() { exits++; return Promise.resolve(); } };
-vm.runInNewContext(fs.readFileSync('keyboard.js', 'utf8'), {
+let storageChanged;
+const context = vm.createContext({
   document, window: { addEventListener(type, callback) { listeners[type] = callback; } }, console,
+  chrome: { storage: { local: { get: async () => ({}) }, onChanged: { addListener(callback) { storageChanged = callback; } } } },
 });
+vm.runInContext(fs.readFileSync('shortcut-config.js', 'utf8'), context);
+vm.runInContext(fs.readFileSync('keyboard.js', 'utf8'), context);
+
 function key(type, overrides = {}) {
   const event = { key: 'k', code: 'KeyK', altKey: true, ctrlKey: false, shiftKey: false,
     metaKey: false, isComposing: false, repeat: false,
@@ -46,4 +51,12 @@ key('keydown', { key: 'p', code: 'KeyP' });
 assert.equal(pipRequests, 1, 'Alt+P is no longer intercepted');
 document.querySelectorAll = () => [];
 key('keydown'); assert.equal(requested, null);
-console.log('PASS: Alt+K fullscreen, Alt+Shift+K PiP, old shortcuts ignored, repeat suppression, no-video page');
+document.querySelectorAll = () => [video('playing', false, 500)];
+storageChanged({ shortcutSettings: { newValue: { page: { videoFullscreen: 'Alt+F', pictureInPicture: 'Alt+P', vimiumSearch: '' } } } }, 'local');
+requested = null;
+key('keydown'); assert.equal(requested, null, 'Old video key stops working after a settings change');
+key('keydown', { key: 'f', code: 'KeyF' }); assert.equal(requested, 'playing');
+storageChanged({ shortcutSettings: { newValue: { page: { videoFullscreen: '' } } } }, 'local');
+requested = null;
+key('keydown', { key: 'f', code: 'KeyF' }); assert.equal(requested, null, 'Clearing disables the shortcut');
+console.log('PASS: video/PiP toggles, repeat suppression, live shortcut changes, old keys removed, clear-to-disable');

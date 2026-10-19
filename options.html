@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shortcut settings · Chromium Workflow Shortcuts</title>
+  <link rel="stylesheet" href="options.css">
+  <script src="shortcut-config.js" defer></script>
+  <script src="options.js" defer></script>
+</head>
+<body>
+<main>
+  <header class="masthead"><div class="brandmark" aria-hidden="true">⌘</div><div><p class="eyebrow">CHROMIUM WORKFLOW SHORTCUTS</p><h1>Your browser. Your keys.</h1><p class="intro">A home for your tabs, video, and desktop shortcuts.</p></div></header>
+  <div class="toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Find an action…" aria-label="Find a shortcut action"></label><button id="reset" class="quiet">Restore defaults</button></div>
+  <section class="card" aria-labelledby="page-title">
+    <div class="section-heading"><div><h2 id="page-title">Video &amp; page shortcuts</h2><p>Click a shortcut, then press your new key combination.</p></div><span class="tag">Editable here</span></div>
+    <div id="page-actions" class="action-list"></div>
+    <p class="footnote">Escape cancels recording. Backspace clears a shortcut. Changes apply to open pages after saving.</p>
+  </section>
+  <section class="card" aria-labelledby="browser-title">
+    <div class="section-heading"><div><h2 id="browser-title">Tabs &amp; browser shortcuts</h2><p>Browser-wide keys are managed by Chromium. These are your live assignments.</p></div><button id="browser-editor" class="secondary">Edit in Chromium <span aria-hidden="true">↗</span></button></div>
+    <div id="browser-actions" class="action-list"></div>
+    <p class="footnote">This list refreshes when you return from Chromium’s shortcut editor.</p>
+  </section>
+  <details class="card" id="desktop-section">
+    <summary><span><strong>Hyprland controls</strong><span class="summary-hint">Optional desktop integration</span></span><span aria-hidden="true">⌄</span></summary>
+    <p class="desktop-intro">PiP fullscreen and return use the video keys above. Desktop changes require a configuration update; saving here alone does not change Hyprland.</p>
+    <div id="desktop-actions" class="action-list"></div>
+    <div class="export-row"><button id="export-hyprland" class="secondary">Download Hyprland config</button><a href="https://github.com/michaltomco/chromium-workflow-shortcuts/blob/main/integrations/README.md" target="_blank" rel="noreferrer">Setup guide ↗</a></div>
+    <p class="footnote">Paste the downloaded configuration above your integration’s <code>dofile(…)</code> line, then run <code>hyprctl reload</code>.</p>
+  </details>
+  <footer class="savebar"><div><strong id="save-state">All changes saved</strong><p id="status" role="status" aria-live="polite">Settings stay on this device.</p></div><button id="save" class="primary" disabled>Save changes</button></footer>
+</main>
+</body>
+</html>

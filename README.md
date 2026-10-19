@@ -9,6 +9,18 @@ Keyboard controls for tabs, groups, memory unloading, and video Picture-in-Pictu
 3. Set shortcuts at `chrome://extensions/shortcuts` using the table below or
    [command-shortcuts.json](command-shortcuts.json). Only four are assigned by default.
 
+## Settings
+
+Click the extension's toolbar button, or choose **Extension options** at
+`chrome://extensions`.
+
+- Record, clear, or reset video, PiP, and search keys; edits apply to open pages.
+- View live tab/browser assignments and open Chromium's shortcut editor to change them.
+- Export Hyprland keys, paste them above the integration's `dofile(…)` line, and reload Hyprland.
+
+Conflicting assignments are flagged before saving. Chromium controls its own
+browser-wide keys, so extensions cannot edit those directly.
+
 **Vimium C is required for the replacement new-tab page and `t` search.** Add this
 extension's ID to Vimium C's external-command allowlist. Remove conflicting
 Vimium bindings for Alt+Shift+K, Alt+M, Alt+C, and Alt+Shift+C if present.

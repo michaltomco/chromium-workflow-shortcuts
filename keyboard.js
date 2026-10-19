@@ -26,116 +26,35 @@ function togglePictureInPicture() {
   video.requestPictureInPicture().catch(console.error);
 }
 
-// Register before page scripts so websites cannot claim these shortcuts first.
-function groupDirection(event) {
-  if (event.metaKey || event.isComposing) return 0;
-  if (event.ctrlKey && event.shiftKey && !event.altKey) {
-    if (event.code === "Digit9") return 1;
-    if (event.code === "Digit8") return -1;
+// Keep page bindings in sync without reloading open tabs after a settings edit.
+let shortcutSettings = WorkflowShortcuts.defaults();
+chrome.storage.local.get('shortcutSettings').then(data => {
+  shortcutSettings = WorkflowShortcuts.resolve(data.shortcutSettings);
+}).catch(() => {});
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.shortcutSettings) {
+    shortcutSettings = WorkflowShortcuts.resolve(changes.shortcutSettings.newValue);
   }
-  if (!event.altKey || event.ctrlKey || event.shiftKey) return 0;
-  const key = event.key.toLowerCase();
-  return key === "j" ? 1 : 0;
+});
+function isEditing(event) {
+  return [document.activeElement, ...event.composedPath()].some(node =>
+    node instanceof Element && (node.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName)
+      || node.getAttribute('role') === 'textbox'));
 }
-
-for (const type of ["keydown", "keypress", "keyup"]) {
+for (const type of ['keydown', 'keypress', 'keyup']) {
   window.addEventListener(type, event => {
-    const fullscreenKey = event.altKey && !event.ctrlKey && !event.shiftKey
-      && event.key.toLowerCase() === "k";
-    if (fullscreenKey && !event.metaKey && !event.isComposing) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (type === "keydown" && !event.repeat) toggleVideoFullscreen();
-      return;
-    }
-    if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
-        && !event.isComposing && event.key.toLowerCase() === "m") {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (type === "keydown" && !event.repeat) {
-        chrome.runtime.sendMessage({ type: "mute-collapse-next-group" }).catch(() => {});
-      }
-      return;
-    }
-    if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
-        && !event.isComposing && event.key.toLowerCase() === "c") {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (type === "keydown" && !event.repeat) {
-        chrome.runtime.sendMessage({ type: "expand-all-groups" }).catch(() => {});
-      }
-      return;
-    }
-    if (event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey
-        && !event.isComposing && event.key.toLowerCase() === "c") {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (type === "keydown" && !event.repeat) {
-        chrome.runtime.sendMessage({ type: "toggle-group-collapse" }).catch(() => {});
-      }
-      return;
-    }
-    if (event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey
-        && !event.isComposing && event.key.toLowerCase() === "m") {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (type === "keydown" && !event.repeat) {
-        chrome.runtime.sendMessage({ type: "toggle-group-mute" }).catch(() => {});
-      }
-      return;
-    }
-    if (event.altKey && !event.ctrlKey && event.shiftKey && !event.metaKey
-        && !event.isComposing && event.key.toLowerCase() === "k") {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (type === "keydown" && !event.repeat) togglePictureInPicture();
-      return;
-    }
-    if (event.ctrlKey && event.shiftKey && !event.altKey && !event.metaKey && !event.isComposing
-        && (event.code === "Digit4" || event.code === "Digit5")) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (type === "keydown") {
-        chrome.runtime.sendMessage({ type: "cycle-tab-section", direction: event.code === "Digit5" ? 1 : -1 }).catch(() => {});
-      }
-      return;
-    }
-    // Forward the configured plain-t search before website handlers can claim it.
-    // Do this only outside editors;
-    // Vimium C explicitly allowlists this extension as an external-command source.
-    if (!event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey
-        && !event.isComposing && event.key === "t") {
-      const editing = [document.activeElement, ...event.composedPath()].some(node =>
-        node instanceof Element && (node.isContentEditable
-          || /^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName)
-          || node.getAttribute("role") === "textbox"));
-      if (!editing) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        if (type === "keydown") {
-          chrome.runtime.sendMessage("hfjbmagddngcpeloejdejnfgbamkjaeg", {
-            handler: "command", command: "Vomnibar.activateInNewTab"
-          }).catch(() => {});
-        }
-        return;
-      }
-    }
-    if (event.ctrlKey && event.shiftKey && !event.altKey && !event.metaKey && !event.isComposing
-        && (event.code === "Digit7" || event.code === "Digit6")) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (type === "keydown") {
-        chrome.runtime.sendMessage({ type: "create-group-tab", inCurrentGroup: event.code === "Digit7" }).catch(() => {});
-      }
-      return;
-    }
-    const direction = groupDirection(event);
-    if (!direction) return;
+    let shortcut;
+    try { shortcut = WorkflowShortcuts.fromEvent(event); } catch { return; }
+    if (!shortcut) return;
+    const action = WorkflowShortcuts.pageActions.find(a => shortcutSettings.page[a.id] === shortcut);
+    if (!action || (action.id === 'vimiumSearch' && isEditing(event))) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (type === "keydown") {
-      chrome.runtime.sendMessage({ type: "cycle-tab-in-group", direction })
-        .catch(() => {}); // An old page may outlive an extension reload.
-    }
+    if (type !== 'keydown' || event.repeat) return;
+    if (action.id === 'videoFullscreen') toggleVideoFullscreen();
+    else if (action.id === 'pictureInPicture') togglePictureInPicture();
+    else chrome.runtime.sendMessage('hfjbmagddngcpeloejdejnfgbamkjaeg', {
+      handler: 'command', command: 'Vomnibar.activateInNewTab'
+    }).catch(() => {});
   }, { capture: true });
 }
