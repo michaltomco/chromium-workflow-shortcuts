@@ -1,12 +1,14 @@
 const config = WorkflowShortcuts;
 let saved = config.defaults(), draft = config.defaults(), nativeCommands = [], recording = null;
-let settingsTabId;
+let settingsTabId, saving = false;
+let savedChatUrls = [...WorkflowChat.defaults];
 const $ = id => document.getElementById(id);
 const clone = value => JSON.parse(JSON.stringify(value));
 function status(message, error = false) { $('status').textContent = message; $('status').classList.toggle('error', error); }
 function dirty() {
-  const changed = JSON.stringify(saved) !== JSON.stringify(draft);
-  $('save').disabled = !changed;
+  const changed = JSON.stringify(saved) !== JSON.stringify(draft)
+    || $('chat-urls').value !== savedChatUrls.join('\n');
+  $('save').disabled = saving || !changed;
   $('save-state').textContent = changed ? 'Unsaved changes' : 'All changes saved';
 }
 function finishRecording() {
@@ -77,14 +79,30 @@ document.addEventListener('keydown', event => {
   } catch (error) { status(error.message, true); }
 }, true);
 $('search').addEventListener('input', filterRows);
+$('chat-urls').addEventListener('input', dirty);
+$('reset-chat').addEventListener('click', () => {
+  $('chat-urls').value = WorkflowChat.defaults.join('\n');
+  dirty(); status('Default chat sites restored. Save to apply.');
+});
 $('browser-editor').addEventListener('click', () => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }));
-$('reset').addEventListener('click', () => { draft = config.defaults(); finishRecording(); dirty(); status('Page and Hyprland defaults restored. Save to apply. Chromium assignments are unchanged.'); });
+$('reset').addEventListener('click', () => { draft = config.defaults(); $('chat-urls').value = WorkflowChat.defaults.join('\n'); finishRecording(); dirty(); status('Shortcut and chat defaults restored. Save to apply. Chromium assignments are unchanged.'); });
 $('save').addEventListener('click', async () => {
+  if (saving) return;
   try {
-    await refreshNative(); config.validate(draft, nativeCommands);
-    await chrome.storage.local.set({ shortcutSettings: draft }); saved = clone(draft); dirty();
-    status('Saved. Page shortcuts updated. Export and apply the config if your Hyprland keys changed.');
+    const next = clone(draft), text = $('chat-urls').value;
+    const urls = WorkflowChat.normalize(text);
+    config.validate(next, nativeCommands);
+    saving = true; dirty(); status('Saving…');
+    // Request only the configured sites, directly inside the Save gesture.
+    const allowed = await chrome.permissions.request({ origins: WorkflowChat.patterns(urls) });
+    if (!allowed) throw new Error('Site access was not allowed. Chat URLs were not saved.');
+    await refreshNative(); config.validate(next, nativeCommands);
+    await chrome.storage.local.set({ shortcutSettings: next, [WorkflowChat.key]: urls });
+    saved = next; savedChatUrls = urls;
+    if ($('chat-urls').value === text) $('chat-urls').value = urls.join('\n');
+    status('Saved. Chat URLs apply the next time you press Alt+M. Export the config if you changed Hyprland keys.');
   } catch (error) { status(error.message, true); }
+  finally { saving = false; dirty(); }
 });
 $('export-hyprland').addEventListener('click', () => {
   try {
@@ -107,7 +125,8 @@ chrome.runtime.onMessage.addListener(message => {
   try {
     settingsTabId = (await chrome.tabs.getCurrent()).id;
     await chrome.runtime.sendMessage({ type: 'set-shortcut-capture', tabId: settingsTabId, active: false });
-    const data = await chrome.storage.local.get('shortcutSettings'); saved = config.resolve(data.shortcutSettings); draft = clone(saved);
+    const data = await chrome.storage.local.get(['shortcutSettings', WorkflowChat.key]); saved = config.resolve(data.shortcutSettings); draft = clone(saved);
+    savedChatUrls = WorkflowChat.resolve(data[WorkflowChat.key]); $('chat-urls').value = savedChatUrls.join('\n');
     renderEditable(); await refreshNative(); dirty();
   } catch (error) { status(`Could not load settings: ${error.message}`, true); }
 })();

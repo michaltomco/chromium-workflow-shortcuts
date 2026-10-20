@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const context = vm.createContext({ URL });
+vm.runInContext(fs.readFileSync('chat-config.js', 'utf8'), context);
 vm.runInContext(fs.readFileSync('chat-groups.js', 'utf8'), context);
 assert.equal(context.chatService({ url: 'https://messenger.com/t/123' }), 0);
 assert.equal(context.chatService({ url: 'https://www.messenger.com/' }), 0);

@@ -8,7 +8,7 @@ async function connect(target) {
   let id = 0; const pending = new Map();
   ws.addEventListener('message', event => { const message = JSON.parse(event.data); if (message.id) { const request = pending.get(message.id); pending.delete(message.id); if(message.error) request.reject(Error(message.error.message)); else request.resolve(message.result); } });
   const send = (method, params = {}) => new Promise((resolve,reject) => { const request = ++id; pending.set(request,{resolve,reject}); ws.send(JSON.stringify({id:request,method,params})); });
-  const evaluate = async expression => { const result = await send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true}); if(result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails)); return result.result.value; };
+  const evaluate = async expression => { const result = await send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true,userGesture:true}); if(result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails)); return result.result.value; };
   return {send,evaluate,ws};
 }
 async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return;}catch{} await new Promise(resolve=>setTimeout(resolve,75));}throw Error('Timed out waiting for page'); }
@@ -30,7 +30,7 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
     if (await page.evaluate('document.body?.innerText.includes("ERR_BLOCKED_BY_CLIENT")')) await page.send("Page.reload");
     return false;
   });
-  await page.evaluate('chrome.storage.local.remove("shortcutSettings")');
+  await page.evaluate('chrome.storage.local.remove(["shortcutSettings","chatGroupUrls"])');
   await page.send("Page.reload");
   const errors=[];page.ws.addEventListener('message',event=>{const message=JSON.parse(event.data);if(message.method==='Runtime.exceptionThrown')errors.push(message.params.exceptionDetails.text)});
   await page.send('Runtime.enable');
@@ -68,6 +68,25 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
   await page.evaluate('document.querySelector("#reset").click();document.querySelector("#save").click()');
   await waitFor(()=>page.evaluate('document.querySelector("#save").disabled'));
   assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("shortcutSettings")).shortcutSettings.page.videoFullscreen)()'),'Alt+P');
+  // Chat launch URLs save independently of shortcuts and survive reload.
+  assert.equal(await page.evaluate('document.querySelector("#chat-urls").value.split("\\n").length'),3);
+  await page.evaluate('document.querySelector("#chat-urls").value="javascript:alert(1)";document.querySelector("#chat-urls").dispatchEvent(new Event("input"));document.querySelector("#save").click()');
+  await waitFor(()=>page.evaluate('document.querySelector("#status").textContent.includes("https://")'));
+  assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("chatGroupUrls")).chatGroupUrls.length)()'),3);
+  const customUrls = ['https://discord.com/channels/@me', 'https://www.messenger.com/t/custom'];
+  await page.evaluate('document.querySelector("#chat-urls").value='+JSON.stringify(customUrls.join('\n'))+';document.querySelector("#chat-urls").dispatchEvent(new Event("input"));document.querySelector("#save").click()');
+  await waitFor(()=>page.evaluate('document.querySelector("#save").disabled && document.querySelector("#status").textContent.startsWith("Saved.")'));
+  assert.deepEqual(await page.evaluate('(async()=> (await chrome.storage.local.get("chatGroupUrls")).chatGroupUrls)()'),customUrls);
+  await page.send('Page.reload');
+  await waitFor(()=>page.evaluate('document.querySelector("#chat-urls")?.value === '+JSON.stringify(customUrls.join('\n'))));
+  // Denied site access must leave saved URLs untouched and allow retry.
+  await page.evaluate('globalThis.originalPermissionRequest=chrome.permissions.request;chrome.permissions.request=async()=>false;document.querySelector("#chat-urls").value="https://example.org/chat";document.querySelector("#chat-urls").dispatchEvent(new Event("input"));document.querySelector("#save").click()');
+  await waitFor(()=>page.evaluate('document.querySelector("#status").textContent.includes("not allowed")'));
+  assert.deepEqual(await page.evaluate('(async()=> (await chrome.storage.local.get("chatGroupUrls")).chatGroupUrls)()'),customUrls);
+  await page.evaluate('chrome.permissions.request=globalThis.originalPermissionRequest;document.querySelector("#reset-chat").click();document.querySelector("#save").click()');
+  await waitFor(()=>page.evaluate('document.querySelector("#save").disabled && document.querySelector("#status").textContent.startsWith("Saved.")'));
+  assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("chatGroupUrls")).chatGroupUrls.length)()'),3);
+  console.log('PASS: chat URL editing, validation, save/reload, denied access and default sites');
   // Export content is valid Lua and uses the saved video/PiP keys.
   fs.writeFileSync('/tmp/workflow-exported-shortcuts.lua',await page.evaluate('WorkflowShortcuts.toHyprland(draft)'));
   await page.evaluate('document.querySelector("#desktop-section").open=false');

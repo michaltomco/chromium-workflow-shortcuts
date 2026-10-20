@@ -14,7 +14,7 @@ async function connect(target) {
     const n = ++id; pending.set(n, { resolve: r => {
       if (r.exceptionDetails) reject(Error(JSON.stringify(r.exceptionDetails))); else resolve(r.result.value);
     }, reject });
-    ws.send(JSON.stringify({ id: n, method: 'Runtime.evaluate', params: { expression, awaitPromise: true, returnByValue: true } }));
+    ws.send(JSON.stringify({ id: n, method: 'Runtime.evaluate', params: { expression, awaitPromise: true, returnByValue: true, userGesture: true } }));
   });
   return { evaluate, ws };
 }
@@ -117,6 +117,31 @@ const key = mute => execFileSync(process.env.SPLIT_TEST_KEY_HELPER, mute ? ['Alt
     assert(outsideChat[0].active);
     assert(s.tabs.every(t => t.mutedInfo.muted));
     console.log('PASS: a chat-only window gets an outside tab so Chat can collapse');
+    // Configure a new website through the actual settings UI. Accept a site
+    // permission prompt only in this disposable profile/virtual display.
+    await evaluate(`chrome.tabGroups.update(${s.group.id},{title:'Conversations'})`);
+    const existingChatId = s.group.id;
+    const settingsWindow = await evaluate('chrome.windows.getCurrent()');
+    await evaluate(`chrome.windows.update(${settingsWindow.id},{focused:true})`);
+    await evaluate('document.querySelector("#chat-urls").value="https://example.org/messages";document.querySelector("#chat-urls").dispatchEvent(new Event("input"));document.querySelector("#save").click()');
+    await new Promise(resolve => setTimeout(resolve, 300));
+    if (!await evaluate('chrome.permissions.contains({origins:["https://*.example.org/*"]})')) {
+      execFileSync(process.env.SPLIT_TEST_KEY_HELPER, ['Tab']);
+      execFileSync(process.env.SPLIT_TEST_KEY_HELPER, ['Return']);
+    }
+    await waitFor(()=>evaluate('document.querySelector("#save").disabled && document.querySelector("#status").textContent.startsWith("Saved.")'));
+    assert.deepEqual(await evaluate('(async()=> (await chrome.storage.local.get("chatGroupUrls")).chatGroupUrls)()'), ['https://example.org/messages']);
+    await evaluate(`chrome.windows.update(${other.id},{focused:true})`);
+    key(false);
+    await waitFor(async()=> (await state()).tabs.some(t=>t.url==='https://example.org/messages'));
+    s = await state();
+    assert.equal(s.group.id, existingChatId, 'Changing all configured sites must retain a renamed managed group');
+    assert.equal(s.tabs.length, 4, 'Keep the original tabs when editing URLs');
+    key(true);
+    await waitFor(async()=> { const s=await state(); return s.group.collapsed && s.tabs.every(t=>t.mutedInfo.muted); });
+    await evaluate('document.querySelector("#reset-chat").click();document.querySelector("#save").click()');
+    await waitFor(()=>evaluate('document.querySelector("#save").disabled && document.querySelector("#status").textContent.startsWith("Saved.")'));
+    console.log('PASS: custom URL saved with site access, used by native Alt+M, muted by Alt+Shift+M, original tabs preserved');
   } finally {
     for (const id of windows) await evaluate(`chrome.windows.remove(${id})`).catch(() => {});
     settings.ws.close();
