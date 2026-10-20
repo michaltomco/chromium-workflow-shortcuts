@@ -70,6 +70,7 @@ and these native browser mappings. It works without Omarchy or private dotfiles.
 | --- | --- |
 | Alt+Shift+S | Toggle vertical-tab sidebar |
 | Alt+G | Open native group-name editor |
+| Alt+Shift+K | Move tab up (works without a native extension assignment) |
 | Ctrl+H / Ctrl+L | Back / forward |
 | Ctrl+Alt+Shift+S | Save page |
 | Alt+P (PiP focused) | Toggle player fullscreen |

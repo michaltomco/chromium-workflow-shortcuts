@@ -13,7 +13,7 @@ end
 
 -- Optional overrides exported by the extension's settings page.
 local hotkeys = {
-  verticalSidebar = "ALT + SHIFT + S", newGroup = "ALT + G", splitView = "ALT + O",
+  verticalSidebar = "ALT + SHIFT + S", newGroup = "ALT + G", splitView = "ALT + O", moveTabPrevious = "ALT + SHIFT + K",
   back = "CTRL + H", forward = "CTRL + L", savePage = "CTRL + ALT + SHIFT + S",
   videoFullscreen = "ALT + P", pictureInPicture = "ALT + SHIFT + P",
 }
@@ -62,6 +62,7 @@ do
   local shortcuts = {
     { hotkeys.verticalSidebar, "Toggle vertical tab sidebar", "CTRL + SHIFT", "L" },
     { hotkeys.splitView, "Open split view", "ALT + SHIFT", "N" },
+    { hotkeys.moveTabPrevious, "Move tab up", "CTRL + SHIFT", "Page_Up" },
     { hotkeys.newGroup, "New tab group", "ALT + SHIFT", "P" },
     -- Other Chromium shortcuts are registered directly by the extension.
     -- Alt+D already focuses Chromium's address bar without a remap.

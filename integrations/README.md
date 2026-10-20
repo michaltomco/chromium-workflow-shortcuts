@@ -32,6 +32,7 @@ Chromium version.
 | --- | --- | --- |
 | Chromium | Alt+Shift+S | Toggle vertical-tab sidebar |
 | Chromium | Alt+G | Open the native group-name editor |
+| Chromium | Alt+Shift+K | Move the current tab up / left |
 | Chromium | Ctrl+H / Ctrl+L | Back / forward |
 | Chromium | Ctrl+Alt+Shift+S | Save page |
 | PiP player | Alt+Shift+P | Return video and focus to Chromium |
