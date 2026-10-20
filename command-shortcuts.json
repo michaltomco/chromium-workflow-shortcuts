@@ -17,5 +17,6 @@
   "open-downloads": "Ctrl+Shift+Y",
   "open-private-window": "Ctrl+Shift+P",
   "cycle-group-previous": "Alt+K",
-  "separate-split-view": "Alt+Shift+O"
+  "separate-split-view": "Alt+Shift+O",
+  "move-tab-previous": "Alt+Shift+K"
 }

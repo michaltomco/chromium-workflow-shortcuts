@@ -34,7 +34,7 @@ Vimium bindings for Alt+Shift+P, Alt+M, Alt+C, and Alt+Shift+C if present.
 | Alt+H / Alt+L | Previous / next group, skipping collapsed groups |
 | Alt+T | New tab in the current group |
 | Alt+Shift+T | New ungrouped tab |
-| Alt+Shift+J | Move tab down |
+| Alt+Shift+J / Alt+Shift+K | Move tab down / up |
 | Alt+W | Close tab |
 | Alt+U | Unload tab and switch away |
 | Alt+Shift+U | Unload group, turn it grey, collapse it, and switch away |
