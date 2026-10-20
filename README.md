@@ -14,7 +14,7 @@ Keyboard controls for tabs, groups, memory unloading, and video Picture-in-Pictu
 Click the extension's toolbar button, or choose **Extension options** at
 `chrome://extensions`.
 
-- Edit **Chat group** URLs, one website per line; save and press Alt+M to use them.
+- Edit **Chat group** URLs, one website per line; save and reopen Chat to use them.
 - Record, clear, or reset video, PiP, and search keys; edits apply to open pages.
 - View live tab/browser assignments and open Chromium's shortcut editor to change them.
 - Export Hyprland keys, paste them above the integration's `dofile(…)` line, and reload Hyprland.
@@ -39,7 +39,7 @@ Vimium bindings for Alt+Shift+P, Alt+M, Alt+C, and Alt+Shift+C if present.
 | Alt+W | Close tab |
 | Alt+U | Unload tab and switch away |
 | Alt+Shift+U | Unload group, turn it grey, collapse it, and switch away |
-| Alt+M | Open, unmute and focus Chat (Messenger, WhatsApp Web, Discord) |
+| Alt+M | Toggle Chat: open/unmute/focus, or mute/collapse when expanded |
 | Alt+Shift+M | Mute and collapse Chat from any Chromium tab |
 | Alt+C | Collapse / expand group |
 | Alt+Shift+C | Expand all groups |

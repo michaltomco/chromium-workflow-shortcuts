@@ -52,17 +52,17 @@ const key = mute => execFileSync(process.env.SPLIT_TEST_KEY_HELPER, mute ? ['Alt
     assert(s.tabs.every(t => !t.mutedInfo.muted)); assert.equal(s.group.collapsed, false);
     const ids = s.tabs.map(t => t.id);
     console.log('PASS: native Alt+M creates the three chat services in order');
-    key(true);
+    key(false);
     await waitFor(async () => { const s = await state(); return s.group.collapsed && s.tabs.every(t => t.mutedInfo.muted); });
     s = await state(); assert(s.all.find(t => t.id === outside).active); assert.equal(s.group.color, 'grey');
     assert.equal(s.all.find(t => t.id === outside).mutedInfo.muted, false);
     assert.equal((await evaluate(`chrome.tabGroups.get(${work})`)).collapsed, false);
-    console.log('PASS: mute/collapse chat, move out, leave Work unmuted and expanded');
+    console.log('PASS: second Alt+M mutes/collapses Chat, leaving Work unmuted and expanded');
     key(false);
     await waitFor(async () => { const s = await state(); return !s.group.collapsed && s.tabs.every(t => !t.mutedInfo.muted); });
     s = await state(); assert.deepEqual(s.tabs.map(t => t.id), ids); assert(s.tabs[0].active); assert.equal(s.group.color, 'blue');
     await evaluate(`chrome.tabs.update(${outside},{active:true})`);
-    key(true);
+    key(false);
     await waitFor(async () => (await state()).group.collapsed);
     assert((await state()).all.find(t => t.id === outside).active, 'Muting remotely preserves current tab');
     console.log('PASS: reopen without duplicates; muting from another group preserves focus');
@@ -73,7 +73,7 @@ const key = mute => execFileSync(process.env.SPLIT_TEST_KEY_HELPER, mute ? ['Alt
     // Focus a different window before invoking the browser-wide command.
     await evaluate(`chrome.windows.update(${other.id},{focused:true})`);
     await waitFor(async () => (await state()).window.id === other.id);
-    key(true);
+    key(false);
     await waitFor(async () => (await state()).group.collapsed);
     s = await state(); assert.equal(s.window.id, other.id); assert(s.all.find(t => t.id === other.tabs[0].id).active);
     console.log('PASS: reuse across windows and mute without stealing another window focus');
@@ -83,12 +83,16 @@ const key = mute => execFileSync(process.env.SPLIT_TEST_KEY_HELPER, mute ? ['Alt
     s = await state(); assert(s.tabs.some(t => t.id === ids[0])); assert(s.tabs.some(t => t.id === ids[2]));
     const repairedIds = s.tabs.map(t => t.id);
     assert(!repairedIds.includes(ids[1]));
+    key(true);
+    await waitFor(async () => (await state()).group.collapsed);
     await evaluate('chrome.storage.local.remove("chatTabGroup")');
     key(false);
     await waitFor(async () => (await state()).tabs.length === 3);
     assert.deepEqual((await state()).tabs.map(t => t.id), repairedIds);
     console.log('PASS: repair missing service and rediscover group after stored ID is lost');
     await evaluate(`chrome.tabGroups.update(${groupId},{title:'Conversations'})`);
+    key(true);
+    await waitFor(async () => (await state()).group.collapsed);
     await evaluate('chrome.storage.local.remove("chatTabGroup")');
     key(false);
     await waitFor(async () => (await state()).tabs.length === 3);
@@ -126,8 +130,7 @@ const key = mute => execFileSync(process.env.SPLIT_TEST_KEY_HELPER, mute ? ['Alt
     await evaluate('document.querySelector("#chat-urls").value="https://example.org/messages";document.querySelector("#chat-urls").dispatchEvent(new Event("input"));document.querySelector("#save").click()');
     await new Promise(resolve => setTimeout(resolve, 300));
     if (!await evaluate('chrome.permissions.contains({origins:["https://*.example.org/*"]})')) {
-      execFileSync(process.env.SPLIT_TEST_KEY_HELPER, ['Tab']);
-      execFileSync(process.env.SPLIT_TEST_KEY_HELPER, ['Return']);
+      execFileSync(process.env.SPLIT_TEST_KEY_HELPER, ['Tab', 'Return']);
     }
     await waitFor(()=>evaluate('document.querySelector("#save").disabled && document.querySelector("#status").textContent.startsWith("Saved.")'));
     assert.deepEqual(await evaluate('(async()=> (await chrome.storage.local.get("chatGroupUrls")).chatGroupUrls)()'), ['https://example.org/messages']);

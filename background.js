@@ -254,7 +254,7 @@ async function cycleTabSection(direction, sourceTabId) {
 // Serialize rapid keypresses so each one advances from the preceding result.
 const fullscreenPreviousStates = new Map();
 const browserCommandActions = {
-  "toggle-group-mute": () => openChatGroup(),
+  "toggle-group-mute": () => toggleChatGroup(),
   "mute-collapse-next-group": () => muteCollapseChatGroup(),
   "toggle-fullscreen": async () => {
     const window = await chrome.windows.getLastFocused();
@@ -389,7 +389,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   if (message?.type === "toggle-group-mute" && sender.tab) {
-    pending = pending.then(() => openChatGroup()).catch(console.error);
+    pending = pending.then(() => toggleChatGroup()).catch(console.error);
     pending.then(() => sendResponse({ ok: true }));
     return true;
   }

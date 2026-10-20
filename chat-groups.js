@@ -29,6 +29,12 @@ async function findChatGroup(preferredWindowId) {
     .sort((a, b) => Number(b.windowId === preferredWindowId) - Number(a.windowId === preferredWindowId));
   return { group: remembered || candidates[0], tabs, urls };
 }
+async function toggleChatGroup() {
+  const window = await chrome.windows.getLastFocused({ windowTypes: ['normal'] });
+  const { group } = await findChatGroup(window.id);
+  if (group && !group.collapsed) return muteCollapseChatGroup();
+  return openChatGroup();
+}
 async function openChatGroup() {
   const window = await chrome.windows.getLastFocused({ windowTypes: ['normal'] });
   let { group, tabs, urls } = await findChatGroup(window.id);

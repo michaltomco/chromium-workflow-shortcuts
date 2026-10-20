@@ -100,7 +100,7 @@ $('save').addEventListener('click', async () => {
     await chrome.storage.local.set({ shortcutSettings: next, [WorkflowChat.key]: urls });
     saved = next; savedChatUrls = urls;
     if ($('chat-urls').value === text) $('chat-urls').value = urls.join('\n');
-    status('Saved. Chat URLs apply the next time you press Alt+M. Export the config if you changed Hyprland keys.');
+    status('Saved. Chat URLs apply when you open the group. Export the config if you changed Hyprland keys.');
   } catch (error) { status(error.message, true); }
   finally { saving = false; dirty(); }
 });

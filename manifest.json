@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chromium Workflow Shortcuts",
-  "version": "1.25.0",
+  "version": "1.26.0",
   "description": "Keyboard controls for tabs, groups, unloading, fullscreen, browser navigation, and video Picture-in-Picture.",
   "background": {
     "service_worker": "service-worker.js"
@@ -58,7 +58,7 @@
       "description": "New ungrouped tab"
     },
     "toggle-group-mute": {
-      "description": "Open or focus chat group"
+      "description": "Toggle chat group"
     },
     "toggle-group-collapse": {
       "description": "Collapse or expand current tab group"
