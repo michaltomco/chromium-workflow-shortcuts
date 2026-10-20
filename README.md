@@ -38,8 +38,8 @@ Vimium bindings for Alt+Shift+P, Alt+M, Alt+C, and Alt+Shift+C if present.
 | Alt+W | Close tab |
 | Alt+U | Unload tab and switch away |
 | Alt+Shift+U | Unload group, turn it grey, collapse it, and switch away |
-| Alt+M | Mute / unmute group |
-| Alt+Shift+M | Mute group, collapse it, and switch away |
+| Alt+M | Open, unmute and focus Chat (Messenger, WhatsApp Web, Discord) |
+| Alt+Shift+M | Mute and collapse Chat from any Chromium tab |
 | Alt+C | Collapse / expand group |
 | Alt+Shift+C | Expand all groups |
 | Alt+Shift+P | Toggle Picture-in-Picture for a video on the page |
@@ -81,3 +81,5 @@ With the optional Hyprland integration, **Alt+O** opens native split view.
 **Alt+Shift+O** separates the focused split into regular tabs, including from the split picker or address bar.
 If upgrading from an earlier version, check that “Separate split view into regular tabs” is assigned
 to **Alt+Shift+O** at `chrome://extensions/shortcuts`.
+
+Chat shortcuts reuse existing tabs and groups across Chromium windows. Missing chat services are opened automatically; unrelated tabs and mute states are preserved.

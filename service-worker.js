@@ -1,2 +1,2 @@
-// A fresh entry point avoids retaining the old worker after command changes.
-importScripts("background.js");
+// Load chat actions before the shared shortcut dispatcher.
+importScripts("chat-groups.js", "background.js");

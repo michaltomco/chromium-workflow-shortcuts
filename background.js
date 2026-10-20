@@ -159,34 +159,6 @@ async function syncAllGroupMuteIndicators() {
   for (const group of groups) await syncGroupMuteIndicator(group.id);
 }
 
-async function toggleGroupMute(sourceTabId) {
-  const active = sourceTabId === undefined
-    ? (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]
-    : await chrome.tabs.get(sourceTabId);
-  if (!active?.active) return;
-  const tabs = active.groupId < 0 ? [active]
-    : await chrome.tabs.query({ windowId: active.windowId, groupId: active.groupId });
-  const muted = tabs.some(tab => !tab.mutedInfo?.muted);
-  await Promise.all(tabs.map(tab => chrome.tabs.update(tab.id, { muted })));
-  if (active.groupId >= 0) await syncGroupMuteIndicator(active.groupId);
-}
-
-async function muteCollapseAndAdvance(sourceTabId) {
-  const active = sourceTabId === undefined
-    ? (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]
-    : await chrome.tabs.get(sourceTabId);
-  if (!active?.active || active.groupId < 0) return;
-  const tabs = await chrome.tabs.query({ windowId: active.windowId, groupId: active.groupId });
-  // Always mute: running this action on an already muted group must not unmute it.
-  await Promise.all(tabs.map(tab => chrome.tabs.update(tab.id, { muted: true })));
-  await syncGroupMuteIndicator(active.groupId);
-  // Select the next eligible section before collapsing, so Chromium does not
-  // choose a different destination when hiding the active group's tabs.
-  await cycleTabSection(1, active.id);
-  await chrome.tabGroups.update(active.groupId, { collapsed: true });
-  lastCollapsedGroupByWindow.set(active.windowId, { groupId: active.groupId, tabId: active.id });
-}
-
 async function unloadCollapseAndAdvance() {
   const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   if (!active?.active || active.groupId < 0) return;
@@ -282,6 +254,8 @@ async function cycleTabSection(direction, sourceTabId) {
 // Serialize rapid keypresses so each one advances from the preceding result.
 const fullscreenPreviousStates = new Map();
 const browserCommandActions = {
+  "toggle-group-mute": () => openChatGroup(),
+  "mute-collapse-next-group": () => muteCollapseChatGroup(),
   "toggle-fullscreen": async () => {
     const window = await chrome.windows.getLastFocused();
     const state = window.state === "fullscreen"
@@ -352,20 +326,12 @@ function dispatchRegisteredCommand(command) {
     pending = pending.then(() => unloadCurrentTab()).catch(console.error);
     return;
   }
-  if (command === "mute-collapse-next-group") {
-    pending = pending.then(() => muteCollapseAndAdvance()).catch(console.error);
-    return;
-  }
   if (command === "expand-all-groups") {
     pending = pending.then(() => expandAllGroups()).catch(console.error);
     return;
   }
   if (command === "toggle-group-collapse") {
     pending = pending.then(() => toggleGroupCollapsed()).catch(console.error);
-    return;
-  }
-  if (command === "toggle-group-mute") {
-    pending = pending.then(() => toggleGroupMute()).catch(console.error);
     return;
   }
   if (command === "previous-tab-section" || command === "next-tab-section") {
@@ -408,7 +374,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
   if (message?.type === "mute-collapse-next-group" && sender.tab) {
-    pending = pending.then(() => muteCollapseAndAdvance(sender.tab.id)).catch(console.error);
+    pending = pending.then(() => muteCollapseChatGroup()).catch(console.error);
     pending.then(() => sendResponse({ ok: true }));
     return true;
   }
@@ -423,7 +389,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   if (message?.type === "toggle-group-mute" && sender.tab) {
-    pending = pending.then(() => toggleGroupMute(sender.tab.id)).catch(console.error);
+    pending = pending.then(() => openChatGroup()).catch(console.error);
     pending.then(() => sendResponse({ ok: true }));
     return true;
   }

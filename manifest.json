@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chromium Workflow Shortcuts",
-  "version": "1.23.3",
+  "version": "1.24.0",
   "description": "Keyboard controls for tabs, groups, unloading, fullscreen, browser navigation, and video Picture-in-Picture.",
   "background": {
     "service_worker": "service-worker.js"
@@ -58,7 +58,7 @@
       "description": "New ungrouped tab"
     },
     "toggle-group-mute": {
-      "description": "Mute or unmute current tab group"
+      "description": "Open or focus chat group"
     },
     "toggle-group-collapse": {
       "description": "Collapse or expand current tab group"
@@ -67,7 +67,7 @@
       "description": "Expand all tab groups in current window"
     },
     "mute-collapse-next-group": {
-      "description": "Mute and collapse group, then switch to next"
+      "description": "Mute and collapse chat group"
     },
     "toggle-fullscreen": {
       "description": "Toggle fullscreen"
@@ -123,5 +123,10 @@
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
-  }
+  },
+  "host_permissions": [
+    "https://*.messenger.com/*",
+    "https://*.web.whatsapp.com/*",
+    "https://*.discord.com/*"
+  ]
 }

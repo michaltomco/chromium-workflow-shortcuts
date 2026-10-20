@@ -1,0 +1,16 @@
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const context = vm.createContext({ URL });
+vm.runInContext(fs.readFileSync('chat-groups.js', 'utf8'), context);
+assert.equal(context.chatService({ url: 'https://messenger.com/t/123' }), 0);
+assert.equal(context.chatService({ url: 'https://www.messenger.com/' }), 0);
+assert.equal(context.chatService({ url: 'https://web.whatsapp.com/' }), 1);
+assert.equal(context.chatService({ url: 'https://discord.com/channels/@me' }), 2);
+assert.equal(context.chatService({ url: 'about:blank', pendingUrl: 'https://discord.com/login' }), 2);
+assert.equal(context.chatService({ url: 'https://messenger.com.example.org/' }), -1);
+assert.equal(context.chatService({ url: 'https://notmessenger.com/' }), -1);
+assert.equal(context.chatService({ url: 'about:blank' }), -1);
+assert.equal(context.chatService({}), -1);
+assert.equal(context.chatService({ url: 'http://web.whatsapp.com/' }), -1);
+console.log('PASS: exact chat hosts, pending navigation, malformed URLs and unrelated-site rejection');
