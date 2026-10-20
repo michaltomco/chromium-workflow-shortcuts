@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chromium Workflow Shortcuts",
-  "version": "1.23.0",
+  "version": "1.23.1",
   "description": "Keyboard controls for tabs, groups, unloading, fullscreen, browser navigation, and video Picture-in-Picture.",
   "background": {
     "service_worker": "service-worker.js"
@@ -55,9 +55,6 @@
       "description": "Next group or ungrouped tabs"
     },
     "create-ungrouped-tab": {
-      "suggested_key": {
-        "default": "Alt+Shift+T"
-      },
       "description": "New ungrouped tab"
     },
     "toggle-group-mute": {
@@ -94,7 +91,10 @@
       "description": "Open private window"
     },
     "separate-split-view": {
-      "description": "Separate split view into regular tabs"
+      "description": "Separate split view into regular tabs",
+      "suggested_key": {
+        "default": "Alt+Shift+O"
+      }
     }
   },
   "chrome_url_overrides": {

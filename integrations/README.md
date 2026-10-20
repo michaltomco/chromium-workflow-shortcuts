@@ -65,4 +65,4 @@ Changing those page keys applies immediately on websites; apply the exported
 configuration to update the separate PiP window as well. Empty keys disable actions.
 The integration leaves its custom browser remaps inactive on the settings page.
 
-**Alt+O** opens native split view. **Alt+Shift+O** separates the focused split on web pages through the extension.
+**Alt+O** opens native split view. **Alt+Shift+O** is a browser-wide extension command that separates the focused split, including from the split picker and address bar.
