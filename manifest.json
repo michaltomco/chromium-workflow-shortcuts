@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chromium Workflow Shortcuts",
-  "version": "1.23.1",
+  "version": "1.23.2",
   "description": "Keyboard controls for tabs, groups, unloading, fullscreen, browser navigation, and video Picture-in-Picture.",
   "background": {
     "service_worker": "service-worker.js"
@@ -91,7 +91,7 @@
       "description": "Open private window"
     },
     "separate-split-view": {
-      "description": "Separate split view into regular tabs",
+      "description": "Separate views",
       "suggested_key": {
         "default": "Alt+Shift+O"
       }
