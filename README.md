@@ -14,7 +14,8 @@ Keyboard controls for tabs, groups, memory unloading, and video Picture-in-Pictu
 Click the extension's toolbar button, or choose **Extension options** at
 `chrome://extensions`.
 
-- Edit **Chat group** URLs, one website per line; save and reopen Chat to use them.
+- Add up to **10 tab-group presets** with their own names, colors, and URL lists.
+- Use each preset’s **Set shortcuts** button to assign its **Group N: toggle** and **Group N: mute and collapse** commands in Chromium. Chat keeps Alt+M / Alt+Shift+M.
 - Record, clear, or reset video, PiP, and search keys; edits apply to open pages.
 - View live tab/browser assignments and open Chromium's shortcut editor to change them.
 - Export Hyprland keys, paste them above the integration's `dofile(…)` line, and reload Hyprland.
@@ -83,4 +84,4 @@ With the optional Hyprland integration, **Alt+O** opens native split view.
 If upgrading from an earlier version, check that “Separate split view into regular tabs” is assigned
 to **Alt+Shift+O** at `chrome://extensions/shortcuts`.
 
-Chat shortcuts reuse existing tabs by website across Chromium windows. Configure launch URLs in Settings → Chat group. New sites request access when saved; existing tabs stay open.
+Presets reuse existing tabs across Chromium windows and keep tabs owned by other presets separate. A toggle opens/unmutes/focuses a collapsed group, or mutes/collapses an expanded one. Removing a preset keeps its browser tabs open.

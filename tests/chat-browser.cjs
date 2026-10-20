@@ -85,7 +85,7 @@ const key = mute => execFileSync(process.env.SPLIT_TEST_KEY_HELPER, mute ? ['Alt
     assert(!repairedIds.includes(ids[1]));
     key(true);
     await waitFor(async () => (await state()).group.collapsed);
-    await evaluate('chrome.storage.local.remove("chatTabGroup")');
+    await evaluate('chrome.storage.local.remove(["chatTabGroup","managedTabGroups"])');
     key(false);
     await waitFor(async () => (await state()).tabs.length === 3);
     assert.deepEqual((await state()).tabs.map(t => t.id), repairedIds);
@@ -93,7 +93,7 @@ const key = mute => execFileSync(process.env.SPLIT_TEST_KEY_HELPER, mute ? ['Alt
     await evaluate(`chrome.tabGroups.update(${groupId},{title:'Conversations'})`);
     key(true);
     await waitFor(async () => (await state()).group.collapsed);
-    await evaluate('chrome.storage.local.remove("chatTabGroup")');
+    await evaluate('chrome.storage.local.remove(["chatTabGroup","managedTabGroups"])');
     key(false);
     await waitFor(async () => (await state()).tabs.length === 3);
     assert.equal((await state()).group.id, groupId);
@@ -121,17 +121,17 @@ const key = mute => execFileSync(process.env.SPLIT_TEST_KEY_HELPER, mute ? ['Alt
     assert(outsideChat[0].active);
     assert(s.tabs.every(t => t.mutedInfo.muted));
     console.log('PASS: a chat-only window gets an outside tab so Chat can collapse');
-    // Configure a new website through the actual settings UI. Accept a site
-    // permission prompt only in this disposable profile/virtual display.
+    // Pregrant site access in this disposable profile; native permission-dialog
+    // focus is timing-dependent. Settings permission denial is tested separately.
+    const setup = await connect(targets.find(t => t.url === 'chrome://extensions/'));
+    try {
+      await setup.evaluate("chrome.developerPrivate.addHostPermission('ejkfmjmeohnjjcljkfojojhkfaehaanf','https://*.example.org/*')");
+    } finally { setup.ws.close(); }
     await evaluate(`chrome.tabGroups.update(${s.group.id},{title:'Conversations'})`);
     const existingChatId = s.group.id;
     const settingsWindow = await evaluate('chrome.windows.getCurrent()');
     await evaluate(`chrome.windows.update(${settingsWindow.id},{focused:true})`);
     await evaluate('document.querySelector("#chat-urls").value="https://example.org/messages";document.querySelector("#chat-urls").dispatchEvent(new Event("input"));document.querySelector("#save").click()');
-    await new Promise(resolve => setTimeout(resolve, 300));
-    if (!await evaluate('chrome.permissions.contains({origins:["https://*.example.org/*"]})')) {
-      execFileSync(process.env.SPLIT_TEST_KEY_HELPER, ['Tab', 'Return']);
-    }
     await waitFor(()=>evaluate('document.querySelector("#save").disabled && document.querySelector("#status").textContent.startsWith("Saved.")'));
     assert.deepEqual(await evaluate('(async()=> (await chrome.storage.local.get("chatGroupUrls")).chatGroupUrls)()'), ['https://example.org/messages']);
     await evaluate(`chrome.windows.update(${other.id},{focused:true})`);

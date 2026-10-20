@@ -11,19 +11,19 @@
   function site(url) { return `${url.protocol}//${host(url)}:${url.port}`; }
   function normalize(value) {
     const entries = typeof value === 'string' ? value.split(/\r?\n/) : value;
-    if (!Array.isArray(entries)) throw Error('Enter one chat URL per line.');
+    if (!Array.isArray(entries)) throw Error('Enter one URL per line.');
     const urls = [], sites = new Set();
     for (const entry of entries) {
-      if (typeof entry !== 'string') throw Error('Enter one chat URL per line.');
+      if (typeof entry !== 'string') throw Error('Enter one URL per line.');
       if (!entry.trim()) continue;
       let url;
-      try { url = new URL(entry.trim()); } catch { throw Error(`Invalid chat URL: ${entry.trim()}`); }
-      if (!['https:', 'http:'].includes(url.protocol) || !url.hostname) throw Error('Chat URLs must start with https:// or http://.');
-      if (url.username || url.password) throw Error('Chat URLs cannot contain a username or password.');
+      try { url = new URL(entry.trim()); } catch { throw Error(`Invalid URL: ${entry.trim()}`); }
+      if (!['https:', 'http:'].includes(url.protocol) || !url.hostname) throw Error('Group URLs must start with https:// or http://.');
+      if (url.username || url.password) throw Error('Group URLs cannot contain a username or password.');
       if (sites.has(site(url))) throw Error(`Use only one URL per website: ${url.hostname}`);
       sites.add(site(url)); urls.push(url.href);
     }
-    if (!urls.length) throw Error('Add at least one chat URL.');
+    if (!urls.length) throw Error('Add at least one URL.');
     return urls;
   }
   function resolve(saved) {

@@ -1,13 +1,13 @@
 const config = WorkflowShortcuts;
 let saved = config.defaults(), draft = config.defaults(), nativeCommands = [], recording = null;
 let settingsTabId, saving = false;
-let savedChatUrls = [...WorkflowChat.defaults];
+const groupEditor = createPresetEditor({ onChange: dirty, onStatus: status });
 const $ = id => document.getElementById(id);
 const clone = value => JSON.parse(JSON.stringify(value));
 function status(message, error = false) { $('status').textContent = message; $('status').classList.toggle('error', error); }
 function dirty() {
   const changed = JSON.stringify(saved) !== JSON.stringify(draft)
-    || $('chat-urls').value !== savedChatUrls.join('\n');
+    || groupEditor.dirty();
   $('save').disabled = saving || !changed;
   $('save-state').textContent = changed ? 'Unsaved changes' : 'All changes saved';
 }
@@ -55,7 +55,8 @@ function filterRows() {
 async function refreshNative() {
   nativeCommands = (await chrome.commands.getAll()).filter(c => !c.name.startsWith('_'));
   const container = $('browser-actions'); container.replaceChildren();
-  for (const command of nativeCommands) {
+  groupEditor.updateCommands(nativeCommands);
+  for (const command of nativeCommands.filter(command => !WorkflowGroups.commandAction(command.name))) {
     const row = document.createElement('div'); row.className = 'action'; row.dataset.search = `${command.description} ${command.shortcut}`.toLowerCase();
     const label = document.createElement('span'); label.className = 'action-label'; label.textContent = command.description || command.name;
     const key = document.createElement('span'); key.className = 'native-key'; key.classList.toggle('unassigned', !command.shortcut); key.textContent = command.shortcut || 'Not assigned';
@@ -79,28 +80,27 @@ document.addEventListener('keydown', event => {
   } catch (error) { status(error.message, true); }
 }, true);
 $('search').addEventListener('input', filterRows);
-$('chat-urls').addEventListener('input', dirty);
-$('reset-chat').addEventListener('click', () => {
-  $('chat-urls').value = WorkflowChat.defaults.join('\n');
-  dirty(); status('Default chat sites restored. Save to apply.');
-});
 $('browser-editor').addEventListener('click', () => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }));
-$('reset').addEventListener('click', () => { draft = config.defaults(); $('chat-urls').value = WorkflowChat.defaults.join('\n'); finishRecording(); dirty(); status('Shortcut and chat defaults restored. Save to apply. Chromium assignments are unchanged.'); });
+$('reset').addEventListener('click', () => { draft = config.defaults(); groupEditor.reset(); finishRecording(); dirty(); status('Shortcut and group defaults restored. Save to apply. Chromium assignments are unchanged.'); });
 $('save').addEventListener('click', async () => {
   if (saving) return;
   try {
-    const next = clone(draft), text = $('chat-urls').value;
-    const urls = WorkflowChat.normalize(text);
+    const next = clone(draft), snapshot = groupEditor.snapshot();
+    const presets = groupEditor.normalize();
+    const urls = presets.flatMap(preset => preset.urls);
     config.validate(next, nativeCommands);
     saving = true; dirty(); status('Saving…');
     // Request only the configured sites, directly inside the Save gesture.
-    const allowed = await chrome.permissions.request({ origins: WorkflowChat.patterns(urls) });
-    if (!allowed) throw new Error('Site access was not allowed. Chat URLs were not saved.');
+    const origins = [...new Set(WorkflowChat.patterns(urls))];
+    const allowed = !origins.length || await chrome.permissions.request({ origins });
+    if (!allowed) throw new Error('Site access was not allowed. Group presets were not saved.');
     await refreshNative(); config.validate(next, nativeCommands);
-    await chrome.storage.local.set({ shortcutSettings: next, [WorkflowChat.key]: urls });
-    saved = next; savedChatUrls = urls;
-    if ($('chat-urls').value === text) $('chat-urls').value = urls.join('\n');
-    status('Saved. Chat URLs apply when you open the group. Export the config if you changed Hyprland keys.');
+    const update = { shortcutSettings: next, [WorkflowGroups.key]: presets };
+    const chat = presets.find(preset => preset.id === 'chat');
+    if (chat) update[WorkflowChat.key] = chat.urls;
+    await chrome.storage.local.set(update);
+    saved = next; groupEditor.markSaved(presets, snapshot);
+    status('Saved. Group changes apply when you open them. Export the config if you changed Hyprland keys.');
   } catch (error) { status(error.message, true); }
   finally { saving = false; dirty(); }
 });
@@ -125,8 +125,8 @@ chrome.runtime.onMessage.addListener(message => {
   try {
     settingsTabId = (await chrome.tabs.getCurrent()).id;
     await chrome.runtime.sendMessage({ type: 'set-shortcut-capture', tabId: settingsTabId, active: false });
-    const data = await chrome.storage.local.get(['shortcutSettings', WorkflowChat.key]); saved = config.resolve(data.shortcutSettings); draft = clone(saved);
-    savedChatUrls = WorkflowChat.resolve(data[WorkflowChat.key]); $('chat-urls').value = savedChatUrls.join('\n');
+    const data = await chrome.storage.local.get(['shortcutSettings', WorkflowChat.key, WorkflowGroups.key]); saved = config.resolve(data.shortcutSettings); draft = clone(saved);
+    groupEditor.load(WorkflowGroups.resolve(data[WorkflowGroups.key], data[WorkflowChat.key]));
     renderEditable(); await refreshNative(); dirty();
   } catch (error) { status(`Could not load settings: ${error.message}`, true); }
 })();

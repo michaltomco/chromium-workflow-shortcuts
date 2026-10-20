@@ -254,8 +254,6 @@ async function cycleTabSection(direction, sourceTabId) {
 // Serialize rapid keypresses so each one advances from the preceding result.
 const fullscreenPreviousStates = new Map();
 const browserCommandActions = {
-  "toggle-group-mute": () => toggleChatGroup(),
-  "mute-collapse-next-group": () => muteCollapseChatGroup(),
   "toggle-fullscreen": async () => {
     const window = await chrome.windows.getLastFocused();
     const state = window.state === "fullscreen"
@@ -314,6 +312,11 @@ chrome.commands.onCommand.addListener(command => {
 });
 function dispatchRegisteredCommand(command) {
   lastCommand = command;
+  const presetAction = WorkflowGroups.commandAction(command);
+  if (presetAction) {
+    pending = pending.then(() => runGroupPreset(presetAction.slot, presetAction.action)).catch(console.error);
+    return;
+  }
   if (Object.hasOwn(browserCommandActions, command)) {
     pending = pending.then(browserCommandActions[command]).catch(console.error);
     return;

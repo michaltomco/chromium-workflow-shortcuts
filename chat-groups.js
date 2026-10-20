@@ -1,82 +1,102 @@
-const CHAT_GROUP_KEY = 'chatTabGroup';
-function chatService(tab, urls = WorkflowChat.defaults) {
-  return WorkflowChat.identify(tab, urls);
-}
-async function findChatGroup(preferredWindowId) {
-  const saved = await chrome.storage.local.get([CHAT_GROUP_KEY, WorkflowChat.key]);
-  const urls = WorkflowChat.resolve(saved[WorkflowChat.key]);
-  const previousUrls = WorkflowChat.resolve(saved[CHAT_GROUP_KEY]?.urls);
-  const patterns = [...new Set([...WorkflowChat.patterns(urls), ...WorkflowChat.patterns(previousUrls)])];
-  const [groups, tabs, allTabs] = await Promise.all([
-    chrome.tabGroups.query({}), chrome.tabs.query({ url: patterns }), chrome.tabs.query({}),
+// Shared preset engine. The legacy Chat entry points keep existing hotkeys intact.
+function chatService(tab, urls = WorkflowChat.defaults) { return WorkflowChat.identify(tab, urls); }
+const groupTitle = title => (title || '').replace(/^🔇\s*/, '').trim().toLowerCase();
+async function groupContext(slot) {
+  const saved = await chrome.storage.local.get([WorkflowGroups.key, WorkflowGroups.stateKey, WorkflowChat.key, 'chatTabGroup']);
+  const presets = WorkflowGroups.resolve(saved[WorkflowGroups.key], saved[WorkflowChat.key]);
+  const preset = presets.find(p => p.slot === slot);
+  if (!preset) return null;
+  const refs = { ...(saved[WorkflowGroups.stateKey] || {}) };
+  if (!refs.chat && saved.chatTabGroup) refs.chat = { ...saved.chatTabGroup, name: 'Chat' };
+  const previous = refs[preset.id];
+  const previousUrls = previous?.urls || preset.urls;
+  const patterns = [...new Set(WorkflowChat.patterns([...preset.urls, ...previousUrls,
+    ...presets.flatMap(p => p.urls), ...presets.flatMap(p => refs[p.id]?.urls || [])]))];
+  const [window, groups, tabs, allTabs] = await Promise.all([
+    chrome.windows.getLastFocused({ windowTypes: ['normal'] }), chrome.tabGroups.query({}),
+    chrome.tabs.query({ url: patterns }), chrome.tabs.query({}),
   ]);
-  const services = new Map();
-  for (const tab of tabs) {
-    const service = chatService(tab, urls);
-    if (tab.groupId < 0 || service < 0) continue;
-    if (!services.has(tab.groupId)) services.set(tab.groupId, new Set());
-    services.get(tab.groupId).add(service);
+  const byReference = (group, ref) => ref && group.id === ref.id && group.windowId === ref.windowId;
+  const remembered = groups.find(group => byReference(group, previous)
+    && (groupTitle(group.title) === groupTitle(preset.name) || groupTitle(group.title) === groupTitle(previous.name)
+      || tabs.some(tab => tab.groupId === group.id && chatService(tab, previousUrls) >= 0)));
+  const others = presets.filter(p => p.id !== preset.id);
+  const reserved = new Set(groups.filter(group => others.some(p => byReference(group, refs[p.id]))).map(group => group.id));
+  for (const group of groups) {
+    if (group.id !== remembered?.id && others.some(p => groupTitle(group.title) === groupTitle(p.name)
+      || (refs[p.id]?.name && groupTitle(group.title) === groupTitle(refs[p.id].name)))) reserved.add(group.id);
   }
-  const namedChat = group => /^(chat|chats)$/i.test((group.title || '').replace(/^🔇\s*/, ''));
-  const remembered = groups.find(group => group.id === saved[CHAT_GROUP_KEY]?.id
-    && group.windowId === saved[CHAT_GROUP_KEY]?.windowId
-    && (namedChat(group) || tabs.some(tab => tab.groupId === group.id && chatService(tab, previousUrls) >= 0)));
-  // An unrelated group containing a configured site is not itself the chat
-  // group. Only adopt unnamed/unremembered groups made entirely of chat sites.
-  const matchingIds = new Set(tabs.filter(tab => chatService(tab, urls) >= 0).map(tab => tab.id));
-  const candidates = groups.filter(group => namedChat(group) || (services.get(group.id)?.size === urls.length
-    && allTabs.filter(tab => tab.groupId === group.id).every(tab => matchingIds.has(tab.id))))
-    .sort((a, b) => Number(b.windowId === preferredWindowId) - Number(a.windowId === preferredWindowId));
-  return { group: remembered || candidates[0], tabs, urls };
+  const sharesSite = others.some(p => p.urls.some(url => chatService({ url }, preset.urls) >= 0)
+    || preset.urls.some(url => chatService({ url }, p.urls) >= 0));
+  const named = group => groupTitle(group.title) === groupTitle(preset.name)
+    || (preset.id === 'chat' && groupTitle(preset.name) === 'chat' && groupTitle(group.title) === 'chats');
+  const complete = group => {
+    if (sharesSite) return false;
+    const members = allTabs.filter(tab => tab.groupId === group.id);
+    const matches = tabs.filter(tab => tab.groupId === group.id && chatService(tab, preset.urls) >= 0);
+    return members.length > 0 && members.length === matches.length
+      && new Set(matches.map(tab => chatService(tab, preset.urls))).size === preset.urls.length;
+  };
+  const candidates = groups.filter(group => !reserved.has(group.id) && (named(group) || complete(group)))
+    .sort((a, b) => Number(b.windowId === window.id) - Number(a.windowId === window.id));
+  const group = remembered && !reserved.has(remembered.id) ? remembered : candidates[0];
+  return { preset, presets, refs, group, tabs, window, reserved };
 }
-async function toggleChatGroup() {
-  const window = await chrome.windows.getLastFocused({ windowTypes: ['normal'] });
-  const { group } = await findChatGroup(window.id);
-  if (group && !group.collapsed) return muteCollapseChatGroup();
-  return openChatGroup();
+async function rememberPreset(context, group) {
+  const { preset, presets, refs } = context;
+  const state = Object.fromEntries(Object.entries(refs).filter(([id]) => presets.some(p => p.id === id)));
+  const ref = { id: group.id, windowId: group.windowId, name: preset.name, urls: preset.urls };
+  state[preset.id] = ref;
+  const update = { [WorkflowGroups.stateKey]: state };
+  if (preset.id === 'chat') update.chatTabGroup = ref;
+  await chrome.storage.local.set(update);
 }
-async function openChatGroup() {
-  const window = await chrome.windows.getLastFocused({ windowTypes: ['normal'] });
-  let { group, tabs, urls } = await findChatGroup(window.id);
-  const isNew = !group;
-  const windowId = group?.windowId ?? window.id;
+async function runGroupPreset(slot, action = 'toggle') {
+  const context = await groupContext(slot);
+  if (!context) return;
+  if (action === 'quiet' || (action === 'toggle' && context.group && !context.group.collapsed)) {
+    return quietPreset(context);
+  }
+  return openPreset(context);
+}
+async function openPreset(context) {
+  const { preset, tabs, reserved } = context;
+  let { group } = context;
+  const isNew = !group, windowId = group?.windowId ?? context.window.id;
   const groupTabs = group ? await chrome.tabs.query({ windowId, groupId: group.id }) : [];
-  const present = new Set(groupTabs.map(tab => chatService(tab, urls)).filter(index => index >= 0));
+  const present = new Set(groupTabs.map(tab => chatService(tab, preset.urls)).filter(index => index >= 0));
   const added = [];
-  for (let service = 0; service < urls.length; service++) {
-    if (present.has(service)) continue;
-    // Reuse a real tab, including its navigation and login state. Leave pinned
-    // tabs alone, since grouping them would require unpinning them.
-    let tab = tabs.filter(tab => !tab.pinned && chatService(tab, urls) === service)
+  for (let site = 0; site < preset.urls.length; site++) {
+    if (present.has(site)) continue;
+    // Do not take tabs belonging to another preset or unpin a user's tab.
+    let tab = tabs.filter(tab => !tab.pinned && !reserved.has(tab.groupId) && chatService(tab, preset.urls) === site)
       .sort((a, b) => Number(b.windowId === windowId) - Number(a.windowId === windowId)
         || Number(a.groupId >= 0) - Number(b.groupId >= 0) || a.index - b.index)[0];
-    if (!tab) tab = await chrome.tabs.create({ windowId, url: urls[service], active: false });
-    const groupId = await chrome.tabs.group(group
-      ? { tabIds: tab.id, groupId: group.id }
+    if (!tab) tab = await chrome.tabs.create({ windowId, url: preset.urls[site], active: false });
+    const id = await chrome.tabs.group(group ? { tabIds: tab.id, groupId: group.id }
       : { tabIds: tab.id, createProperties: { windowId } });
-    if (!group) group = await chrome.tabGroups.update(groupId, { title: 'Chat', color: 'blue' });
-    await chrome.storage.local.set({ [CHAT_GROUP_KEY]: { id: group.id, windowId, urls } });
+    if (!group) group = await chrome.tabGroups.update(id, { title: preset.name, color: preset.color });
+    await rememberPreset(context, group);
     added.push(tab.id);
   }
-  // New groups follow the configured URL order. Existing groups keep
-  // their user's order and any extra tabs.
   let current = (await chrome.tabs.query({ windowId, groupId: group.id })).sort((a, b) => a.index - b.index);
   if (isNew) {
     const start = current[0].index;
     for (let i = 0; i < added.length; i++) await chrome.tabs.move(added[i], { index: start + i });
     current = (await chrome.tabs.query({ windowId, groupId: group.id })).sort((a, b) => a.index - b.index);
   }
-  await chrome.storage.local.set({ [CHAT_GROUP_KEY]: { id: group.id, windowId, urls } });
+  await rememberPreset(context, group);
   await Promise.all(current.map(tab => chrome.tabs.update(tab.id, { muted: false })));
   await syncGroupMuteIndicator(group.id);
-  await chrome.tabGroups.update(group.id, { collapsed: false });
+  await chrome.tabGroups.update(group.id, { title: preset.name, color: preset.color, collapsed: false });
   await chrome.tabs.update(current[0].id, { active: true });
   await chrome.windows.update(windowId, { focused: true });
 }
-async function muteCollapseChatGroup() {
-  const window = await chrome.windows.getLastFocused({ windowTypes: ['normal'] });
-  const { group } = await findChatGroup(window.id);
+async function quietPreset(context) {
+  const { group, preset } = context;
   if (!group) return;
+  await rememberPreset(context, group);
+  if (groupTitle(group.title) !== groupTitle(preset.name)) await chrome.tabGroups.update(group.id, { title: preset.name });
   const tabs = await chrome.tabs.query({ windowId: group.windowId, groupId: group.id });
   await Promise.all(tabs.map(tab => chrome.tabs.update(tab.id, { muted: true })));
   await syncGroupMuteIndicator(group.id);
@@ -91,3 +111,5 @@ async function muteCollapseChatGroup() {
   await chrome.tabGroups.update(group.id, { collapsed: true });
   lastCollapsedGroupByWindow.set(group.windowId, { groupId: group.id, tabId: tabs[0]?.id });
 }
+function toggleChatGroup() { return runGroupPreset(1); }
+function muteCollapseChatGroup() { return runGroupPreset(1, 'quiet'); }

@@ -30,13 +30,13 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
     if (await page.evaluate('document.body?.innerText.includes("ERR_BLOCKED_BY_CLIENT")')) await page.send("Page.reload");
     return false;
   });
-  await page.evaluate('chrome.storage.local.remove(["shortcutSettings","chatGroupUrls"])');
+  await page.evaluate('chrome.storage.local.remove(["shortcutSettings","chatGroupUrls","groupPresets"])');
   await page.send("Page.reload");
   const errors=[];page.ws.addEventListener('message',event=>{const message=JSON.parse(event.data);if(message.method==='Runtime.exceptionThrown')errors.push(message.params.exceptionDetails.text)});
   await page.send('Runtime.enable');
   await page.send('Emulation.setDeviceMetricsOverride',{width:1100,height:1100,deviceScaleFactor:1,mobile:false});
   await page.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'dark'}]});
-  await waitFor(()=>page.evaluate('document.querySelectorAll("#browser-actions .action").length === 20'));
+  await waitFor(()=>page.evaluate('document.querySelectorAll("#browser-actions .action").length === 18'));
   assert.equal(await page.evaluate('document.querySelectorAll("#page-actions .action").length'),3);
   assert.equal(await page.evaluate('document.querySelectorAll("#desktop-actions .action").length'),7);
   assert.equal(await page.evaluate('document.querySelector("#save").disabled'),true);

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chromium Workflow Shortcuts",
-  "version": "1.26.0",
+  "version": "1.27.0",
   "description": "Keyboard controls for tabs, groups, unloading, fullscreen, browser navigation, and video Picture-in-Picture.",
   "background": {
     "service_worker": "service-worker.js"
@@ -58,7 +58,7 @@
       "description": "New ungrouped tab"
     },
     "toggle-group-mute": {
-      "description": "Toggle chat group"
+      "description": "Group 1: toggle"
     },
     "toggle-group-collapse": {
       "description": "Collapse or expand current tab group"
@@ -67,7 +67,7 @@
       "description": "Expand all tab groups in current window"
     },
     "mute-collapse-next-group": {
-      "description": "Mute and collapse chat group"
+      "description": "Group 1: mute and collapse"
     },
     "toggle-fullscreen": {
       "description": "Toggle fullscreen"
@@ -95,6 +95,60 @@
       "suggested_key": {
         "default": "Alt+Shift+O"
       }
+    },
+    "toggle-preset-2": {
+      "description": "Group 2: toggle"
+    },
+    "mute-preset-2": {
+      "description": "Group 2: mute and collapse"
+    },
+    "toggle-preset-3": {
+      "description": "Group 3: toggle"
+    },
+    "mute-preset-3": {
+      "description": "Group 3: mute and collapse"
+    },
+    "toggle-preset-4": {
+      "description": "Group 4: toggle"
+    },
+    "mute-preset-4": {
+      "description": "Group 4: mute and collapse"
+    },
+    "toggle-preset-5": {
+      "description": "Group 5: toggle"
+    },
+    "mute-preset-5": {
+      "description": "Group 5: mute and collapse"
+    },
+    "toggle-preset-6": {
+      "description": "Group 6: toggle"
+    },
+    "mute-preset-6": {
+      "description": "Group 6: mute and collapse"
+    },
+    "toggle-preset-7": {
+      "description": "Group 7: toggle"
+    },
+    "mute-preset-7": {
+      "description": "Group 7: mute and collapse"
+    },
+    "toggle-preset-8": {
+      "description": "Group 8: toggle"
+    },
+    "mute-preset-8": {
+      "description": "Group 8: mute and collapse"
+    },
+    "toggle-preset-9": {
+      "description": "Group 9: toggle"
+    },
+    "mute-preset-9": {
+      "description": "Group 9: mute and collapse"
+    },
+    "toggle-preset-10": {
+      "description": "Group 10: toggle"
+    },
+    "mute-preset-10": {
+      "description": "Group 10: mute and collapse"
     }
   },
   "chrome_url_overrides": {
