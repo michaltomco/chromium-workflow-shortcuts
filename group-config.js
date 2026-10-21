@@ -26,8 +26,8 @@
     return defaults(WorkflowChat.resolve(legacyUrls));
   }
   function commands(slot) {
-    return slot === 1 ? { toggle: 'toggle-group-mute', quiet: 'mute-collapse-next-group' }
-      : { toggle: `toggle-preset-${slot}`, quiet: `mute-preset-${slot}` };
+    return slot === 1 ? { toggle: 'toggle-group-mute' }
+      : { toggle: `toggle-preset-${slot}` };
   }
   function commandAction(command) {
     for (let slot = 1; slot <= limit; slot++) {

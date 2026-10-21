@@ -8,9 +8,12 @@ const migrated = config.resolve(undefined, ['https://example.org/inbox']);
 assert.equal(migrated[0].id, 'chat'); assert.equal(migrated[0].slot, 1);
 assert.deepEqual(plain(migrated[0].urls), ['https://example.org/inbox']);
 assert.deepEqual(plain(config.resolve([])), [], 'Removing every preset must not recreate Chat');
-assert.deepEqual(plain(config.commands(1)), { toggle: 'toggle-group-mute', quiet: 'mute-collapse-next-group' });
+assert.deepEqual(plain(config.commands(1)), { toggle: 'toggle-group-mute' });
 assert.deepEqual(plain(config.commandAction('toggle-preset-3')), { slot: 3, action: 'toggle' });
-assert.deepEqual(plain(config.commandAction('mute-preset-10')), { slot: 10, action: 'quiet' });
+for (const name of ['mute-collapse-next-group', ...Array.from({length:9}, (_,i)=>`mute-preset-${i+2}`)]) {
+  assert.equal(config.commandAction(name), null);
+  assert.equal(JSON.parse(fs.readFileSync('manifest.json')).commands[name], undefined);
+}
 assert.equal(config.commandAction('toggle-preset-11'), null);
 assert.equal(config.commandAction('toggle-fullscreen'), null);
 const first = { id: 'one', slot: 1, name: ' Work ', color: 'green', urls: 'https://example.org/' };

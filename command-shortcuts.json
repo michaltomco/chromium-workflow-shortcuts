@@ -7,7 +7,6 @@
   "toggle-group-mute": "Alt+M",
   "toggle-group-collapse": "Alt+C",
   "expand-all-groups": "Alt+Shift+C",
-  "mute-collapse-next-group": "Alt+Shift+M",
   "unload-current-tab": "Alt+U",
   "unload-collapse-next-group": "Alt+Shift+U",
   "toggle-fullscreen": "Alt+S",

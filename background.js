@@ -314,7 +314,7 @@ function dispatchRegisteredCommand(command) {
   lastCommand = command;
   const presetAction = WorkflowGroups.commandAction(command);
   if (presetAction) {
-    pending = pending.then(() => runGroupPreset(presetAction.slot, presetAction.action)).catch(console.error);
+    pending = pending.then(() => runGroupPreset(presetAction.slot)).catch(console.error);
     return;
   }
   if (Object.hasOwn(browserCommandActions, command)) {
@@ -375,11 +375,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "group-cycle-diagnostics" && !sender.tab?.url?.startsWith("http")) {
     sendResponse({ workerVersion: chrome.runtime.getManifest().version, lastCommand });
     return;
-  }
-  if (message?.type === "mute-collapse-next-group" && sender.tab) {
-    pending = pending.then(() => muteCollapseChatGroup()).catch(console.error);
-    pending.then(() => sendResponse({ ok: true }));
-    return true;
   }
   if (message?.type === "expand-all-groups" && sender.tab) {
     pending = pending.then(() => expandAllGroups(sender.tab.id)).catch(console.error);

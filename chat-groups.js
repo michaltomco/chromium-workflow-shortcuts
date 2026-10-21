@@ -51,10 +51,10 @@ async function rememberPreset(context, group) {
   if (preset.id === 'chat') update.chatTabGroup = ref;
   await chrome.storage.local.set(update);
 }
-async function runGroupPreset(slot, action = 'toggle') {
+async function runGroupPreset(slot) {
   const context = await groupContext(slot);
   if (!context) return;
-  if (action === 'quiet' || (action === 'toggle' && context.group && !context.group.collapsed)) {
+  if (context.group && !context.group.collapsed) {
     return quietPreset(context);
   }
   return openPreset(context);
@@ -112,4 +112,3 @@ async function quietPreset(context) {
   lastCollapsedGroupByWindow.set(group.windowId, { groupId: group.id, tabId: tabs[0]?.id });
 }
 function toggleChatGroup() { return runGroupPreset(1); }
-function muteCollapseChatGroup() { return runGroupPreset(1, 'quiet'); }

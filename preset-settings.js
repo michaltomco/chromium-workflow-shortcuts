@@ -8,7 +8,7 @@ function createPresetEditor({ onChange, onStatus }) {
   function updateKeys() {
     for (const card of container.querySelectorAll('.preset-card')) {
       const names = WorkflowGroups.commands(Number(card.dataset.slot));
-      for (const action of ['toggle', 'quiet']) {
+      for (const action of ['toggle']) {
         const key = commands.find(command => command.name === names[action])?.shortcut || '';
         const label = card.querySelector(`[data-key="${action}"]`);
         label.textContent = key || 'Not assigned'; label.classList.toggle('unassigned', !key);
@@ -23,22 +23,26 @@ function createPresetEditor({ onChange, onStatus }) {
     }
     for (const preset of draft) {
       const card = document.createElement('div'); card.className = 'preset-card'; card.dataset.slot = preset.slot; card.dataset.presetId = preset.id; card.setAttribute('role', 'group'); card.setAttribute('aria-label', `Group ${preset.slot} preset`);
-      card.innerHTML = '<div class="preset-heading"><strong class="preset-slot"></strong><button class="quiet preset-remove" type="button">Remove</button></div><div class="preset-fields"><label>Name<input class="preset-name" type="text" autocomplete="off"></label><label>Color<select class="preset-color"></select></label></div><label class="chat-label preset-url-label">URLs · one website per line</label><textarea class="preset-urls" rows="4" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="preset-keys"><span>Toggle <span class="native-key" data-key="toggle"></span></span><span>Mute &amp; collapse <span class="native-key" data-key="quiet"></span></span><button class="secondary preset-shortcuts" type="button">Set shortcuts ↗</button></div><p class="footnote preset-key-help"></p>';
+      card.innerHTML = '<div class="preset-heading"><strong class="preset-slot"></strong><button class="quiet preset-remove" type="button">Remove</button></div><div class="preset-fields"><label>Name<input class="preset-name" type="text" autocomplete="off"></label><fieldset class="preset-colors"><legend>Color · <span class="preset-color-name"></span></legend><div class="preset-swatches"></div></fieldset></div><label class="chat-label preset-url-label">URLs · one website per line</label><textarea class="preset-urls" rows="4" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="preset-keys"><span>Toggle <span class="native-key" data-key="toggle"></span></span><button class="secondary preset-shortcuts" type="button">Set shortcuts ↗</button></div><p class="footnote preset-key-help"></p>';
       card.querySelector('.preset-slot').textContent = `Group ${preset.slot}`;
       const name = card.querySelector('.preset-name'); name.value = preset.name;
       name.addEventListener('input', () => { preset.name = name.value; onChange(); });
-      const color = card.querySelector('.preset-color');
+      const selectedColor = card.querySelector('.preset-color-name');
+      const colorName = value => value[0].toUpperCase() + value.slice(1);
+      selectedColor.textContent = colorName(preset.color);
       for (const value of WorkflowGroups.colors) {
-        const option = document.createElement('option'); option.value = value;
-        option.textContent = value[0].toUpperCase() + value.slice(1); color.append(option);
+        const label = document.createElement('label'); label.className = 'preset-swatch'; label.title = colorName(value);
+        const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'color-' + preset.id;
+        radio.value = value; radio.checked = value === preset.color; radio.setAttribute('aria-label', colorName(value));
+        const swatch = document.createElement('span'); swatch.dataset.color = value;
+        radio.addEventListener('change', () => { preset.color = value; selectedColor.textContent = colorName(value); onChange(); });
+        label.append(radio, swatch); card.querySelector('.preset-swatches').append(label);
       }
-      color.value = preset.color;
-      color.addEventListener('change', () => { preset.color = color.value; onChange(); });
       const urls = card.querySelector('.preset-urls');
       urls.id = preset.id === 'chat' ? 'chat-urls' : `preset-urls-${preset.id}`;
       card.querySelector('.preset-url-label').htmlFor = urls.id; urls.value = preset.urls;
       urls.addEventListener('input', () => { preset.urls = urls.value; onChange(); });
-      card.querySelector('.preset-key-help').textContent = `In Chromium's shortcut editor, use “Group ${preset.slot}: toggle” and “Group ${preset.slot}: mute and collapse”.`;
+      card.querySelector('.preset-key-help').textContent = `In Chromium's shortcut editor, use “Group ${preset.slot}: toggle”.`;
       card.querySelector('.preset-shortcuts').addEventListener('click', () => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }));
       card.querySelector('.preset-remove').addEventListener('click', () => {
         draft = draft.filter(p => p.id !== preset.id); render(); onChange();
@@ -61,7 +65,7 @@ function createPresetEditor({ onChange, onStatus }) {
     const preset = { id: crypto.randomUUID(), slot, name, color: WorkflowGroups.colors[(slot - 1) % WorkflowGroups.colors.length], urls: '' };
     draft.push(preset); render(); onChange();
     container.lastElementChild.querySelector('.preset-name').focus();
-    onStatus('Add URLs and save. Use Set shortcuts to assign this group’s browser-wide keys.');
+    onStatus('Add URLs and save. Use Set shortcuts to assign this group’s browser-wide key.');
   });
   return {
     load(presets) { saved = editable(presets); draft = copy(saved); render(); },

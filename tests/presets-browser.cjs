@@ -19,7 +19,11 @@ const key = (letter, shift = false) => execFileSync(process.env.SPLIT_TEST_KEY_H
     await waitFor(()=>evaluate('!saving && document.querySelector("#save").disabled && document.querySelector("#status").textContent.startsWith("Saved.")'));
   };
   try {
-    for (const [commandName, keybinding] of [['toggle-group-mute', 'Alt+M'], ['mute-collapse-next-group', 'Alt+Shift+M'], ['toggle-preset-2', 'Alt+Y'], ['mute-preset-2', 'Alt+Shift+Y']]) {
+    const commands = await evaluate('chrome.commands.getAll()');
+    assert(!commands.some(command => command.name === 'mute-collapse-next-group' || command.name.startsWith('mute-preset-')));
+    assert.equal(await evaluate('document.querySelectorAll(".preset-card:first-child .preset-swatch input[type=radio]").length'), 9);
+    assert.equal(await evaluate('document.querySelectorAll(".preset-card:first-child .native-key").length'), 1);
+    for (const [commandName, keybinding] of [['toggle-group-mute', 'Alt+M'], ['toggle-preset-2', 'Alt+Y']]) {
       await setup.evaluate(`chrome.developerPrivate.updateExtensionCommand(${JSON.stringify({ extensionId: 'ejkfmjmeohnjjcljkfojojhkfaehaanf', commandName, keybinding })})`);
     }
     const legacy = ['https://www.messenger.com/t/legacy', 'https://web.whatsapp.com/', 'https://discord.com/channels/@me'];
@@ -38,7 +42,7 @@ const key = (letter, shift = false) => execFileSync(process.env.SPLIT_TEST_KEY_H
     await evaluate(`chrome.storage.local.set({chatTabGroup:${JSON.stringify(oldRef)}})`);
     await evaluate('chrome.storage.local.remove("managedTabGroups")');
     await evaluate('document.querySelector("#add-group").click()');
-    await evaluate(`(()=>{const card=document.querySelector('[data-slot="2"]');const name=card.querySelector('.preset-name');name.value='Research';name.dispatchEvent(new Event('input'));const urls=card.querySelector('.preset-urls');urls.value='https://discord.com/channels/@me\\nhttps://www.messenger.com/t/research';urls.dispatchEvent(new Event('input'));const color=card.querySelector('.preset-color');color.value='purple';color.dispatchEvent(new Event('change'))})()`);
+    await evaluate(`(()=>{const card=document.querySelector('[data-slot="2"]');const name=card.querySelector('.preset-name');name.value='Research';name.dispatchEvent(new Event('input'));const urls=card.querySelector('.preset-urls');urls.value='https://discord.com/channels/@me\\nhttps://www.messenger.com/t/research';urls.dispatchEvent(new Event('input'));card.querySelector('input[value="purple"]').click()})()`);
     await save();
     const configured = await presets(), research = configured.find(p=>p.slot===2);
     assert.equal(configured[0].id, 'chat'); assert.deepEqual(configured[0].urls, legacy);
@@ -63,7 +67,7 @@ const key = (letter, shift = false) => execFileSync(process.env.SPLIT_TEST_KEY_H
     key('y');
     await waitFor(async()=> !(await state()).groups.find(g=>g.id===researchId).collapsed);
     await evaluate(`chrome.tabs.update(${chatTabs[0]},{active:true})`);
-    key('y', true);
+    key('y');
     await waitFor(async()=> (await state()).groups.find(g=>g.id===researchId).collapsed);
     assert((await state()).tabs.find(t=>t.id===chatTabs[0]).active);
     key('m');
@@ -71,7 +75,7 @@ const key = (letter, shift = false) => execFileSync(process.env.SPLIT_TEST_KEY_H
     key('m');
     await waitFor(async()=> !(await state()).groups.find(g=>g.id===chatId).collapsed);
     assert.deepEqual((await state()).tabs.filter(t=>t.groupId===chatId).map(t=>t.id), chatTabs);
-    console.log('PASS: independent native toggles/quiet keys, overlapping sites do not steal tabs, existing Chat group retained');
+    console.log('PASS: independent native toggles, overlapping sites do not steal tabs, existing Chat group retained');
     await evaluate('document.querySelector("#add-group").click();document.querySelector("#save").click()');
     await waitFor(()=>evaluate('document.querySelector("#status").textContent.includes("Add at least one")'));
     assert.equal((await presets()).length, 2);
@@ -94,7 +98,7 @@ const key = (letter, shift = false) => execFileSync(process.env.SPLIT_TEST_KEY_H
     assert.notEqual(projectsId,researchId); assert.notEqual(projectsId,chatId);
     assert.deepEqual(snapshot.tabs.filter(t=>t.groupId===chatId).map(t=>t.id),chatTabs);
     assert(snapshot.groups.some(g=>g.id===researchId));
-    await evaluate('(()=>{const card=document.querySelector(\'[data-slot="2"]\');const input=card.querySelector(".preset-name");input.value="Work stuff";input.dispatchEvent(new Event("input"));const color=card.querySelector(".preset-color");color.value="orange";color.dispatchEvent(new Event("change"))})()'); await save();
+    await evaluate(`(()=>{const card=document.querySelector('[data-slot="2"]');const input=card.querySelector('.preset-name');input.value='Work stuff';input.dispatchEvent(new Event('input'));card.querySelector('input[value="orange"]').click()})()`); await save();
     key('y'); await waitFor(async()=> (await state()).groups.find(g=>g.id===projectsId).collapsed);
     key('y'); await waitFor(async()=> (await state()).groups.some(g=>g.id===projectsId&&g.title==='Work stuff'&&g.color==='orange'&&!g.collapsed));
     console.log('PASS: reused shortcut slots get new preset identities; rename/color changes retain the correct group');
