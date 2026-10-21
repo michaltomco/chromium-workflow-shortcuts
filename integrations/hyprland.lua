@@ -140,7 +140,6 @@ end
 do
   local installed = false
   local last_chromium_address = nil
-  local fullscreen_pins = {}
   local function is_pip(window)
     return window and window.floating
       and window.title:lower():match("^picture.?in.?picture$") ~= nil
@@ -153,52 +152,48 @@ do
     if hotkeys.pictureInPicture ~= "" then hl.unbind(hotkeys.pictureInPicture) end
     if hotkeys.videoFullscreen ~= "" then hl.unbind(hotkeys.videoFullscreen) end
     if wanted then
-      if hotkeys.videoFullscreen ~= "" then
-        bind(hotkeys.videoFullscreen, "PiP: Toggle fullscreen", function()
-          local window = hl.get_active_window()
-          if is_pip(window) then
-            local target = "address:" .. window.address
-            if (window.fullscreen or 0) ~= 0 then
-              hl.dispatch(hl.dsp.window.fullscreen({ window = target, mode = "fullscreen", action = "unset" }))
-              if fullscreen_pins[window.address] then
-                hl.dispatch(hl.dsp.window.pin({ window = target, action = "set" }))
-              end
-              fullscreen_pins[window.address] = nil
-            else
-              fullscreen_pins[window.address] = window.pinned
-              if window.pinned then
-                hl.dispatch(hl.dsp.window.pin({ window = target, action = "unset" }))
-              end
-              hl.dispatch(hl.dsp.window.fullscreen({ window = target, mode = "fullscreen", action = "set" }))
+      local function return_to_browser(fullscreen)
+        local window = hl.get_active_window()
+        if not is_pip(window) then return end
+        local browser = last_chromium_address
+          and hl.get_window("address:" .. last_chromium_address) or nil
+        if not is_chromium(browser) or browser.pid ~= window.pid then
+          browser = nil
+          for _, candidate in ipairs(hl.get_windows()) do
+            if is_chromium(candidate) and candidate.pid == window.pid
+                and (not browser or candidate.focus_history_id < browser.focus_history_id) then
+              browser = candidate
             end
           end
+        end
+        local address = browser and browser.address
+        hl.dispatch(hl.dsp.window.close({ window = "address:" .. window.address }))
+        if not address then return end
+        hl.timer(function()
+          if not hl.get_window("address:" .. address) then return end
+          hl.dispatch(hl.dsp.focus({ window = "address:" .. address }))
+          if fullscreen then
+            hl.timer(function()
+              local active = hl.get_active_window()
+              if not is_chromium(active) or active.address ~= address then return end
+              local key = hotkeys.videoFullscreen:match("([^ +]+)$")
+              local mods = hotkeys.videoFullscreen:match("^(.-)%s*%+%s*[^+]+$") or ""
+              hl.dispatch(hl.dsp.send_key_state({ mods = mods, key = key, state = "down" }))
+              hl.timer(function()
+                hl.dispatch(hl.dsp.send_key_state({ mods = mods, key = key, state = "up" }))
+              end, { timeout = 50, type = "oneshot" })
+            end, { timeout = 100, type = "oneshot" })
+          end
+        end, { timeout = 100, type = "oneshot" })
+      end
+      if hotkeys.videoFullscreen ~= "" then
+        bind(hotkeys.videoFullscreen, "PiP: Return to Chromium and fullscreen video", function()
+          return_to_browser(true)
         end)
       end
       if hotkeys.pictureInPicture ~= "" then
         bind(hotkeys.pictureInPicture, "PiP: Return video to browser tab", function()
-          local window = hl.get_active_window()
-          if is_pip(window) then
-            local browser = last_chromium_address
-              and hl.get_window("address:" .. last_chromium_address) or nil
-            if not is_chromium(browser) or browser.pid ~= window.pid then
-              browser = nil
-              for _, candidate in ipairs(hl.get_windows()) do
-                if is_chromium(candidate) and candidate.pid == window.pid
-                    and (not browser or candidate.focus_history_id < browser.focus_history_id) then
-                  browser = candidate
-                end
-              end
-            end
-            local browser_address = browser and browser.address
-            hl.dispatch(hl.dsp.window.close({ window = "address:" .. window.address }))
-            if browser_address then
-              hl.timer(function()
-                if hl.get_window("address:" .. browser_address) then
-                  hl.dispatch(hl.dsp.focus({ window = "address:" .. browser_address }))
-                end
-              end, { timeout = 100, type = "oneshot" })
-            end
-          end
+          return_to_browser(false)
         end)
       end
     end

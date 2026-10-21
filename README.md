@@ -76,7 +76,7 @@ and these native browser mappings. It works without Omarchy or private dotfiles.
 | Alt+Shift+K | Move tab up (works without a native extension assignment) |
 | Ctrl+H / Ctrl+L | Back / forward |
 | Ctrl+Alt+Shift+S | Save page |
-| Alt+P (PiP focused) | Toggle player fullscreen |
+| Alt+P (PiP focused) | Return video to Chromium and fullscreen it |
 
 See [setup instructions](integrations/README.md#setup) to load the optional Lua file.
 

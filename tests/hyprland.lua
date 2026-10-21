@@ -90,15 +90,18 @@ active = pip
 emit("window.active")
 assert(bindings["ALT + SHIFT + P"] and not bindings["ALT + G"])
 bindings["ALT + P"]()
-assert(commands[#commands].kind == "fullscreen" and commands[#commands].args.window == "address:pip")
-assert(commands[#commands - 1].kind == "pin" and commands[#commands - 1].args.action == "unset")
-pip.fullscreen = 2
-pip.at.x = 1790
-run_timers(300)
-assert(pip.at.x == 1790, "Do not reposition fullscreen PiP")
-bindings["ALT + P"]()
-assert(commands[#commands].kind == "pin" and commands[#commands].args.action == "set")
-pip.fullscreen = 0
+assert(commands[#commands].kind == "close" and commands[#commands].args.window == "address:pip")
+run_timers(100)
+assert(commands[#commands].kind == "focus" and commands[#commands].args.window == "address:browser")
+active = browser
+emit("window.active")
+run_timers(100)
+assert(commands[#commands].kind == "key" and commands[#commands].args.key == "P")
+assert(commands[#commands].args.mods == "ALT" and commands[#commands].args.state == "down")
+run_timers(50)
+assert(commands[#commands].args.state == "up")
+active = pip
+emit("window.active")
 bindings["ALT + SHIFT + P"]()
 assert(commands[#commands].kind == "close")
 run_timers(100)
@@ -106,6 +109,17 @@ assert(commands[#commands].kind == "focus" and commands[#commands].args.window =
 active = browser
 emit("window.active")
 assert(not bindings["ALT + SHIFT + P"])
+active = pip
+emit("window.active")
+bindings["ALT + P"]()
+run_timers(100)
+local before_switch = #commands
+active = other
+emit("window.active")
+run_timers(100)
+assert(#commands == before_switch, "Do not forward fullscreen if focus changes during PiP return")
+active = browser
+emit("window.active")
 browser.title = "Vimium New Tab - Chromium"
 emit("window.title")
 browser.title = "Blank Page - Chromium"
