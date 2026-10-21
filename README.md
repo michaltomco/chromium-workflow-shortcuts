@@ -80,7 +80,7 @@ and these native browser mappings. It works without Omarchy or private dotfiles.
 
 See [setup instructions](integrations/README.md#setup) to load the optional Lua file.
 
-With the optional Hyprland integration, **Alt+O** opens native split view.
+With the optional Hyprland integration, **Alt+O** opens native split view with Vimium C’s bar in the second pane. Assign **Prepare Vimium split search (Hyprland Alt+O)** to **Alt+O** in Chromium. The bar accepts URLs, searches, and existing-tab suggestions; existing-tab results open a copy of that URL in the pane, leaving the original tab intact.
 **Alt+Shift+O** separates the focused split into regular tabs, including from the split picker or address bar.
 If upgrading from an earlier version, check that “Separate split view into regular tabs” is assigned
 to **Alt+Shift+O** at `chrome://extensions/shortcuts`.

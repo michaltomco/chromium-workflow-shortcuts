@@ -60,6 +60,12 @@ assert(#rules == 1 and rules[1].float and rules[1].pin)
 assert(bindings["ALT + G"] and bindings["CTRL + H"] and not bindings["ALT + J"])
 assert(bindings["ALT + O"], "Split-view shortcut is installed for Chromium")
 assert(bindings["ALT + SHIFT + K"], "Move-up shortcut works without a native assignment")
+bindings["ALT + O"]()
+assert(commands[#commands].args.key == "O" and commands[#commands].args.mods == "ALT", "Arm extension before native split")
+run_timers(50)
+run_timers(100)
+assert(commands[#commands].args.key == "N" and commands[#commands].args.mods == "ALT + SHIFT")
+run_timers(50)
 bindings["ALT + SHIFT + K"]()
 assert(commands[#commands].kind == "key")
 assert(commands[#commands].args.mods == "CTRL + SHIFT" and commands[#commands].args.key == "Page_Up")
@@ -107,6 +113,10 @@ run_timers(650)
 local command = commands[#commands]
 assert(type(command) == "string" and command:find("focus-newtab.sh", 1, true))
 assert(command:find([[test'"'"'s]], 1, true), "Quote apostrophes in clone paths")
+browser.title = "Vimium Split New Tab - Chromium"
+emit("window.title")
+run_timers(650)
+assert(commands[#commands]:find("--split", 1, true), "Split panes use their own focus handoff")
 local count = #commands
 browser.title = "Vimium New Tab - Chromium"
 emit("window.title")

@@ -23,7 +23,7 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
   assert(extension, 'Load the extension in the disposable profile before testing');
   await setup.evaluate('chrome.management.setEnabled('+JSON.stringify(extension.id)+',true)');
   await setup.evaluate('chrome.developerPrivate.reload('+JSON.stringify(extension.id)+')');
-  for (const [commandName,keybinding] of [['video-fullscreen','Alt+P'],['video-pip','Alt+Shift+P']]) {
+  for (const [commandName,keybinding] of [['video-fullscreen','Alt+P'],['video-pip','Alt+Shift+P'],['vimium-search','']]) {
     await setup.evaluate('chrome.developerPrivate.updateExtensionCommand('+JSON.stringify({extensionId:extension.id,commandName,keybinding})+')');
   }
   const target = await (await fetch(base+'/json/new?'+encodeURIComponent('chrome-extension://'+extension.id+'/options.html'),{method:'PUT'})).json();
@@ -40,7 +40,7 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
   await page.send('Runtime.enable');
   await page.send('Emulation.setDeviceMetricsOverride',{width:1100,height:1100,deviceScaleFactor:1,mobile:false});
   await page.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'dark'}]});
-  await waitFor(()=>page.evaluate('document.querySelectorAll("#browser-actions .action").length === 18'));
+  await waitFor(()=>page.evaluate('document.querySelectorAll("#browser-actions .action").length === 19'));
   assert.equal(await page.evaluate('document.querySelectorAll("#page-actions .action").length'),3);
   assert.equal(await page.evaluate('document.querySelectorAll("#desktop-actions .action").length'),7);
   assert.equal(await page.evaluate('document.querySelector("#save").disabled'),true);

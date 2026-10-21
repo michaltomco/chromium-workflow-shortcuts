@@ -307,6 +307,10 @@ async function captureRegisteredShortcut(command) {
 }
 let commandCaptureQueue = Promise.resolve();
 chrome.commands.onCommand.addListener((command, tab) => {
+  if (command === 'prepare-split-search') {
+    prepareSplitSearch(tab)?.catch(console.error);
+    return;
+  }
   if (command === 'video-fullscreen' || command === 'video-pip') {
     lastCommand = command;
     if (tab?.url === chrome.runtime.getURL('options.html')) {

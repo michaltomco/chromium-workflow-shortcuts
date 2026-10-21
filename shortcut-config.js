@@ -55,7 +55,8 @@
         if (!key) continue;
         if (!action.plain && !/(Ctrl|Alt|Meta)\+/.test(key)) throw new Error(`${action.label}: include Ctrl, Alt, or Meta.`);
         if (seen.has(key)) throw new Error(`${key} is already assigned to ${seen.get(key)}.`);
-        if (native.has(key)) throw new Error(`${key} is assigned to “${native.get(key)}” in Chromium. Change that assignment first.`);
+        const splitBridge = action.id === 'splitView' && commands.some(command => command.name === 'prepare-split-search' && command.shortcut && normalize(command.shortcut) === key);
+        if (native.has(key) && !splitBridge) throw new Error(`${key} is assigned to “${native.get(key)}” in Chromium. Change that assignment first.`);
         seen.set(key, action.label);
       }
     }

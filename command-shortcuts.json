@@ -19,5 +19,6 @@
   "separate-split-view": "Alt+Shift+O",
   "move-tab-previous": "Alt+Shift+K",
   "video-fullscreen": "Alt+P",
-  "video-pip": "Alt+Shift+P"
+  "video-pip": "Alt+Shift+P",
+  "prepare-split-search": "Alt+O"
 }

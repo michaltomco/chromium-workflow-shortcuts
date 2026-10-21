@@ -19,6 +19,7 @@ const plain = config.defaults(); plain.desktop.back = 'F';
 assert.throws(() => config.validate(plain), /include Ctrl/);
 assert.equal(config.resolve({ page: { videoFullscreen: '' } }).page.videoFullscreen, '');
 assert.equal(config.resolve({ page: { videoFullscreen: 3 } }).page.videoFullscreen, 'Alt+P');
+config.validate(config.defaults(), [{name:'prepare-split-search',shortcut:'Alt+O'}]);
 const lua = config.toHyprland(config.defaults());
 assert(lua.includes('videoFullscreen = "ALT + P"'));
 assert(lua.includes('pictureInPicture = "ALT + SHIFT + P"'));

@@ -98,6 +98,26 @@ do
             hl.unbind("RETURN")
             bind("RETURN", "Chromium: Finish naming group", finish_chromium_group_name)
           end
+          if shortcut[1] == hotkeys.splitView then
+            local active = hl.get_active_window()
+            local address = active and active.address
+            local key = hotkeys.splitView:match("([^ +]+)$")
+            local mods = hotkeys.splitView:match("^(.-)%s*%+%s*[^+]+$") or ""
+            -- First arm the extension, then let Chromium create the split.
+            hl.dispatch(hl.dsp.send_key_state({ mods = mods, key = key, state = "down" }))
+            hl.timer(function()
+              hl.dispatch(hl.dsp.send_key_state({ mods = mods, key = key, state = "up" }))
+            end, { timeout = 50, type = "oneshot" })
+            hl.timer(function()
+              local current = hl.get_active_window()
+              if not current or current.address ~= address then return end
+              hl.dispatch(hl.dsp.send_key_state({ mods = shortcut[3], key = shortcut[4], state = "down" }))
+              hl.timer(function()
+                hl.dispatch(hl.dsp.send_key_state({ mods = shortcut[3], key = shortcut[4], state = "up" }))
+              end, { timeout = 50, type = "oneshot" })
+            end, { timeout = 100, type = "oneshot" })
+            return
+          end
           -- Explicit down/up follows Omarchy's clipboard bindings, avoiding
           -- synthetic modifiers remaining pressed after send_shortcut.
           hl.dispatch(hl.dsp.send_key_state({ mods = shortcut[3], key = shortcut[4], state = "down" }))
@@ -195,15 +215,16 @@ do
   hl.on("window.title", function()
     local window = hl.get_active_window()
     if not is_chromium(window)
-        or window.title ~= "Vimium New Tab - Chromium" then return end
+        or (window.title ~= "Vimium New Tab - Chromium" and window.title ~= "Vimium Split New Tab - Chromium") then return end
+    local split = window.title == "Vimium Split New Tab - Chromium"
     chromium_newtab_focus_generation = chromium_newtab_focus_generation + 1
     local request = chromium_newtab_focus_generation
     local address = window.address
     hl.timer(function()
       local active = hl.get_active_window()
       if chromium_group_naming == address or request ~= chromium_newtab_focus_generation or not active or active.address ~= address
-          or not is_chromium(active) or active.title ~= "Blank Page - Chromium" then return end
-      hl.exec_cmd(focus_command .. " " .. shell_quote(address))
+          or not is_chromium(active) or active.title ~= (split and "Vimium Split New Tab - Chromium" or "Blank Page - Chromium") then return end
+      hl.exec_cmd(focus_command .. " " .. shell_quote(address) .. (split and " --split" or ""))
     end, { timeout = 650, type = "oneshot" })
   end)
 end
