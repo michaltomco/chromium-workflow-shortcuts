@@ -4,7 +4,7 @@ set -eu
 still_on_new_tab() {
   hyprctl activewindow -j | jq -e --arg address "$1" '
     (.address | ltrimstr("0x")) == ($address | ltrimstr("0x"))
-    and .class == "chromium" and .title == "Blank Page - Chromium"
+    and (.class == "chromium" or .class == "chromium-browser") and .title == "Blank Page - Chromium"
   ' >/dev/null
 }
 # Closing the group editor can leave a different native focus position.

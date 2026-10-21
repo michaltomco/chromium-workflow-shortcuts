@@ -11,6 +11,10 @@ local function bind(keys, description, callback)
   hl.bind(keys, callback, { description = description })
 end
 
+local function is_chromium(window)
+  return window ~= nil and (window.class == "chromium" or window.class == "chromium-browser")
+end
+
 -- Optional overrides exported by the extension's settings page.
 local hotkeys = {
   verticalSidebar = "ALT + SHIFT + S", newGroup = "ALT + G", splitView = "ALT + O", moveTabPrevious = "ALT + SHIFT + K",
@@ -48,7 +52,7 @@ local function finish_chromium_group_name()
     hl.dispatch(hl.dsp.send_key_state({ mods = "", key = "code:36", state = "up" }))
     hl.timer(function()
       local active = hl.get_active_window()
-      if active and active.class == "chromium" and active.address == address
+      if is_chromium(active) and active.address == address
           and active.title == "Blank Page - Chromium" then
         hl.exec_cmd(focus_command .. " " .. shell_quote(address) .. " --after-group")
       end
@@ -77,7 +81,7 @@ do
   local installed = false
   local function refresh_chromium_shortcuts()
     local window = hl.get_active_window()
-    local wanted = window ~= nil and window.class == "chromium"
+    local wanted = is_chromium(window)
       and not window.title:find("Shortcut settings · Chromium Workflow Shortcuts", 1, true)
     if chromium_group_naming and (not wanted or window.address ~= chromium_group_naming) then
       chromium_group_naming = nil
@@ -123,7 +127,7 @@ do
   end
   local function refresh_pip_shortcut()
     local active = hl.get_active_window()
-    if active and active.class == "chromium" then last_chromium_address = active.address end
+    if is_chromium(active) then last_chromium_address = active.address end
     local wanted = not not is_pip(active)
     if wanted == installed then return end
     if hotkeys.pictureInPicture ~= "" then hl.unbind(hotkeys.pictureInPicture) end
@@ -156,10 +160,10 @@ do
           if is_pip(window) then
             local browser = last_chromium_address
               and hl.get_window("address:" .. last_chromium_address) or nil
-            if not browser or browser.class ~= "chromium" or browser.pid ~= window.pid then
+            if not is_chromium(browser) or browser.pid ~= window.pid then
               browser = nil
               for _, candidate in ipairs(hl.get_windows()) do
-                if candidate.class == "chromium" and candidate.pid == window.pid
+                if is_chromium(candidate) and candidate.pid == window.pid
                     and (not browser or candidate.focus_history_id < browser.focus_history_id) then
                   browser = candidate
                 end
@@ -190,7 +194,7 @@ end
 do
   hl.on("window.title", function()
     local window = hl.get_active_window()
-    if not window or window.class ~= "chromium"
+    if not is_chromium(window)
         or window.title ~= "Vimium New Tab - Chromium" then return end
     chromium_newtab_focus_generation = chromium_newtab_focus_generation + 1
     local request = chromium_newtab_focus_generation
@@ -198,7 +202,7 @@ do
     hl.timer(function()
       local active = hl.get_active_window()
       if chromium_group_naming == address or request ~= chromium_newtab_focus_generation or not active or active.address ~= address
-          or active.class ~= "chromium" or active.title ~= "Blank Page - Chromium" then return end
+          or not is_chromium(active) or active.title ~= "Blank Page - Chromium" then return end
       hl.exec_cmd(focus_command .. " " .. shell_quote(address))
     end, { timeout = 650, type = "oneshot" })
   end)

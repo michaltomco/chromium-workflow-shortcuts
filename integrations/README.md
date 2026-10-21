@@ -22,7 +22,7 @@ standard Hyprland or Omarchy; no private dotfiles are needed.
    ```
 
 Load it only once. This file uses Lua APIs and cannot be sourced from an older
-`hyprland.conf`. It matches Chromium's `chromium` window class and English
+`hyprland.conf`. It matches Chromium's `chromium` and `chromium-browser` window classes and English
 window titles. Browser features such as the vertical sidebar depend on your
 Chromium version.
 

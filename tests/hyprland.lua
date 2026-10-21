@@ -2,7 +2,7 @@
 local file = assert(io.open("integrations/hyprland.lua"))
 local source = file:read("*a")
 file:close()
-local browser = { address = "browser", class = "chromium", title = "Video - Chromium", pid = 42, focus_history_id = 0 }
+local browser = { address = "browser", class = arg[1] or "chromium", title = "Video - Chromium", pid = 42, focus_history_id = 0 }
 local pip = { address = "pip", class = "", title = "Picture in picture", pid = 42, floating = true, pinned = true,
   at = { x = 1790, y = 36 }, size = { x = 600, y = 338 },
   monitor = { x = 0, y = 0, width = 3440, height = 1440, scale = 1.6 } }
