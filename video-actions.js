@@ -29,12 +29,10 @@ async function videoAction(action, css) {
   }
   return 'opened';
 }
-async function runVideoAction(action) {
-  const [tab] = await chrome.tabs.query({active:true,lastFocusedWindow:true});
-  if (!tab) return;
-  try {
-    const css = await (await fetch(chrome.runtime.getURL('video-fullscreen.css'))).text();
-    const results = await chrome.scripting.executeScript({target:{tabId:tab.id},func:videoAction,args:[action,css]});
-    if (results[0]?.result === 'no-video') console.info('No playable video in this page or its same-origin frames.');
-  } catch (error) { console.warn('Video action unavailable on this page:', error.message); }
+function runVideoAction(action, tab) {
+  if (!tab?.id) return;
+  chrome.scripting.executeScript({target:{tabId:tab.id},func:videoAction,args:[action,workflowFullscreenStyle]})
+    .then(results => {
+      if (results[0]?.result === 'no-video') console.info('No playable video in this page or its same-origin frames.');
+    }).catch(error => console.warn('Video action unavailable on this page:', error.message));
 }

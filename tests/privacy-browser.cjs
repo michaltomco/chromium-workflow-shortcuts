@@ -13,11 +13,13 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const options=await connect(targets.find(t=>t.url.includes('/options.html')));
   const setup=await connect(targets.find(t=>t.url==='chrome://extensions/'));
   let video,windowId;
+  const inspect=expression=>video.evaluate(expression,{userGesture:false});
   try {
     const perms=await options.evaluate('chrome.permissions.getAll()');
     assert(!perms.permissions.includes('tabs'));assert.deepEqual(perms.origins||[],[]);
     const manifest=await options.evaluate('chrome.runtime.getManifest()');
     assert(!manifest.content_scripts && !manifest.host_permissions && !manifest.optional_host_permissions);
+    await setup.evaluate("chrome.developerPrivate.updateExtensionCommand({extensionId:'ejkfmjmeohnjjcljkfojojhkfaehaanf',commandName:'toggle-group-mute',keybinding:'Alt+M'})");
     // One unrelated matching tab must stay untouched in default mode.
     const w=await options.evaluate('chrome.windows.create({url:"https://www.messenger.com/",focused:true})');windowId=w.id;
     await options.evaluate('chrome.storage.local.remove(["managedTabGroups","chatTabGroup"])');
@@ -36,19 +38,25 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
     await options.evaluate(`chrome.tabs.update(${w.tabs[0].id},{url:'http://127.0.0.1:18766/',active:true})`);
     await waitFor(async()=> (await(await fetch(base+'/json/list')).json()).some(t=>t.url==='http://127.0.0.1:18766/'));
     video=await connect((await(await fetch(base+'/json/list')).json()).find(t=>t.url==='http://127.0.0.1:18766/'));
-    await waitFor(()=>video.evaluate('document.querySelector("video")?.readyState>=2'));
+    await waitFor(()=>inspect('document.querySelector("video")?.readyState>=2'));
     for(const [commandName,keybinding] of [['video-fullscreen','Alt+P'],['video-pip','Alt+Shift+P']])await setup.evaluate(`chrome.developerPrivate.updateExtensionCommand(${JSON.stringify({extensionId:'ejkfmjmeohnjjcljkfojojhkfaehaanf',commandName,keybinding})})`);
-    key('Alt_L','p');await waitFor(()=>video.evaluate('!!document.fullscreenElement'));
-    assert.equal(await video.evaluate('getComputedStyle(document.querySelector("video")).objectFit'),'contain');
-    key('Alt_L','p');await waitFor(()=>video.evaluate('!document.fullscreenElement'));
-    key('Alt_L','Shift_L','p');await waitFor(()=>video.evaluate('!!document.pictureInPictureElement'));
+    key('Alt_L','p');await waitFor(()=>inspect('!!document.fullscreenElement'));
+    assert.equal(await inspect('getComputedStyle(document.querySelector("video")).objectFit'),'contain');
+    key('Alt_L','p');await waitFor(()=>inspect('!document.fullscreenElement'));
+    // Let all transient page activation expire. Each new native shortcut must
+    // supply its own gesture; inspection must never create one.
+    await sleep(5500);assert.equal(await inspect('navigator.userActivation.isActive'),false);
+    key('Alt_L','p');await waitFor(()=>inspect('!!document.fullscreenElement'));
+    key('Alt_L','p');await waitFor(()=>inspect('!document.fullscreenElement'));
+    await sleep(5500);assert.equal(await inspect('navigator.userActivation.isActive'),false);
+    key('Alt_L','Shift_L','p');await waitFor(()=>inspect('!!document.pictureInPictureElement'));
     await options.evaluate(`chrome.windows.update(${w.id},{focused:true});chrome.tabs.update(${w.tabs[0].id},{active:true})`);
-    key('Alt_L','Shift_L','p');await waitFor(()=>video.evaluate('!document.pictureInPictureElement'));
+    key('Alt_L','Shift_L','p');await waitFor(()=>inspect('!document.pictureInPictureElement'));
     // Native remapping applies immediately without installing a page listener.
     await setup.evaluate(`chrome.developerPrivate.updateExtensionCommand({extensionId:'ejkfmjmeohnjjcljkfojojhkfaehaanf',commandName:'video-fullscreen',keybinding:'Alt+F'})`);
-    key('Alt_L','p');await sleep(150);assert.equal(await video.evaluate('!!document.fullscreenElement'),false);
-    key('Alt_L','f');await waitFor(()=>video.evaluate('!!document.fullscreenElement'));key('Alt_L','f');await waitFor(()=>video.evaluate('!document.fullscreenElement'));
-    await video.send('Page.navigate',{url:'http://localhost:18766/'});await waitFor(()=>video.evaluate('document.querySelector("video")?.readyState>=2'));
+    key('Alt_L','p');await sleep(150);assert.equal(await inspect('!!document.fullscreenElement'),false);
+    key('Alt_L','f');await waitFor(()=>inspect('!!document.fullscreenElement'));key('Alt_L','f');await waitFor(()=>inspect('!document.fullscreenElement'));
+    await video.send('Page.navigate',{url:'http://localhost:18766/'});await waitFor(()=>inspect('document.querySelector("video")?.readyState>=2'));
     const injected=await options.evaluate(`chrome.scripting.executeScript({target:{tabId:${w.tabs[0].id}},func:()=>true}).then(()=>true,()=>false)`);
     assert.equal(injected,false,'Navigation to another origin revokes activeTab access');
     assert.deepEqual((await options.evaluate('chrome.permissions.getAll()')).origins||[],[]);

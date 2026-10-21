@@ -254,8 +254,6 @@ async function cycleTabSection(direction, sourceTabId) {
 // Serialize rapid keypresses so each one advances from the preceding result.
 const fullscreenPreviousStates = new Map();
 const browserCommandActions = {
-  "video-fullscreen": () => runVideoAction("fullscreen"),
-  "video-pip": () => runVideoAction("pip"),
   "vimium-search": () => chrome.runtime.sendMessage("hfjbmagddngcpeloejdejnfgbamkjaeg", { handler: "command", command: "Vomnibar.activateInNewTab" }),
   "toggle-fullscreen": async () => {
     const window = await chrome.windows.getLastFocused();
@@ -308,7 +306,18 @@ async function captureRegisteredShortcut(command) {
   return true;
 }
 let commandCaptureQueue = Promise.resolve();
-chrome.commands.onCommand.addListener(command => {
+chrome.commands.onCommand.addListener((command, tab) => {
+  if (command === 'video-fullscreen' || command === 'video-pip') {
+    lastCommand = command;
+    if (tab?.url === chrome.runtime.getURL('options.html')) {
+      captureRegisteredShortcut(command).catch(console.error);
+      return;
+    }
+    // Start injection in the original command callback. Async queues and API
+    // lookups lose the gesture required by fullscreen and Picture-in-Picture.
+    runVideoAction(command === 'video-fullscreen' ? 'fullscreen' : 'pip', tab);
+    return;
+  }
   commandCaptureQueue = commandCaptureQueue.then(async () => {
     if (!await captureRegisteredShortcut(command)) dispatchRegisteredCommand(command);
   }).catch(console.error);

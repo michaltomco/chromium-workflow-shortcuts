@@ -10,8 +10,8 @@ async function connect(target) {
   const send = (method, params = {}) => new Promise((resolve, reject) => {
     const request = ++id; pending.set(request, { resolve, reject }); ws.send(JSON.stringify({ id: request, method, params }));
   });
-  const evaluate = async expression => {
-    const result = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture: true });
+  const evaluate = async (expression, { userGesture = true } = {}) => {
+    const result = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture });
     if (result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails));
     return result.result.value;
   };
