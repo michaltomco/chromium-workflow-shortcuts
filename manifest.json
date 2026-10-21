@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chromium Workflow Shortcuts",
-  "version": "1.28.4",
+  "version": "1.29.0",
   "description": "Keyboard controls for tabs, groups, unloading, fullscreen, browser navigation, and video Picture-in-Picture.",
   "background": {
     "service_worker": "service-worker.js"
@@ -126,7 +126,8 @@
   },
   "permissions": [
     "tabGroups",
-    "storage"
+    "storage",
+    "tabs"
   ],
   "options_ui": {
     "page": "options.html",
@@ -147,14 +148,5 @@
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
-  },
-  "host_permissions": [
-    "https://*.messenger.com/*",
-    "https://*.web.whatsapp.com/*",
-    "https://*.discord.com/*"
-  ],
-  "optional_host_permissions": [
-    "http://*/*",
-    "https://*/*"
-  ]
+  }
 }

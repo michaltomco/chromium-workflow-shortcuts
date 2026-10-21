@@ -20,6 +20,8 @@ Click the extension's toolbar button, or choose **Extension options** at
 - View live tab/browser assignments and open Chromium's shortcut editor to change them.
 - Export Hyprland keys, paste them above the integration's `dofile(…)` line, and reload Hyprland.
 
+Presets use the `tabs` permission to match existing tab URLs; adding sites does not request website access.
+
 Conflicting assignments are flagged before saving. Chromium controls its own
 browser-wide keys, so extensions cannot edit those directly.
 

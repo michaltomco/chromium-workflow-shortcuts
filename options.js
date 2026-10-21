@@ -87,13 +87,8 @@ $('save').addEventListener('click', async () => {
   try {
     const next = clone(draft), snapshot = groupEditor.snapshot();
     const presets = groupEditor.normalize();
-    const urls = presets.flatMap(preset => preset.urls);
     config.validate(next, nativeCommands);
     saving = true; dirty(); status('Saving…');
-    // Request only the configured sites, directly inside the Save gesture.
-    const origins = [...new Set(WorkflowChat.patterns(urls))];
-    const allowed = !origins.length || await chrome.permissions.request({ origins });
-    if (!allowed) throw new Error('Site access was not allowed. Group presets were not saved.');
     await refreshNative(); config.validate(next, nativeCommands);
     const update = { shortcutSettings: next, [WorkflowGroups.key]: presets };
     const chat = presets.find(preset => preset.id === 'chat');

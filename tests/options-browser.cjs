@@ -79,14 +79,21 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
   assert.deepEqual(await page.evaluate('(async()=> (await chrome.storage.local.get("chatGroupUrls")).chatGroupUrls)()'),customUrls);
   await page.send('Page.reload');
   await waitFor(()=>page.evaluate('document.querySelector("#chat-urls")?.value === '+JSON.stringify(customUrls.join('\n'))));
-  // Denied site access must leave saved URLs untouched and allow retry.
-  await page.evaluate('globalThis.originalPermissionRequest=chrome.permissions.request;chrome.permissions.request=async()=>false;document.querySelector("#chat-urls").value="https://example.org/chat";document.querySelector("#chat-urls").dispatchEvent(new Event("input"));document.querySelector("#save").click()');
-  await waitFor(()=>page.evaluate('document.querySelector("#status").textContent.includes("not allowed")'));
-  assert.deepEqual(await page.evaluate('(async()=> (await chrome.storage.local.get("chatGroupUrls")).chatGroupUrls)()'),customUrls);
+  // Adding a site must save without requesting additional host access.
+  const originsBefore = await page.evaluate("(async()=> (await chrome.permissions.getAll()).origins)()");
+  await page.evaluate('globalThis.originalPermissionRequest=chrome.permissions.request;chrome.permissions.request=async()=>{throw Error("Unexpected site access request")};document.querySelector("#chat-urls").value="https://example.org/chat";document.querySelector("#chat-urls").dispatchEvent(new Event("input"));document.querySelector("#save").click()');
+  await waitFor(()=>page.evaluate('document.querySelector("#save").disabled && document.querySelector("#status").textContent.startsWith("Saved.")'));
+  assert.deepEqual(await page.evaluate('(async()=> (await chrome.storage.local.get("chatGroupUrls")).chatGroupUrls)()'),["https://example.org/chat"]);
+  const permissions = await page.evaluate("chrome.permissions.getAll()");
+  assert(permissions.permissions.includes("tabs"));
+  assert.deepEqual(permissions.origins, originsBefore, "Presets must not add host access");
+  const manifest = await page.evaluate("chrome.runtime.getManifest()");
+  assert.equal(manifest.host_permissions, undefined);
+  assert.equal(manifest.optional_host_permissions, undefined);
   await page.evaluate('chrome.permissions.request=globalThis.originalPermissionRequest;document.querySelector("#reset-chat").click();document.querySelector("#save").click()');
   await waitFor(()=>page.evaluate('document.querySelector("#save").disabled && document.querySelector("#status").textContent.startsWith("Saved.")'));
   assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("chatGroupUrls")).chatGroupUrls.length)()'),3);
-  console.log('PASS: chat URL editing, validation, save/reload, denied access and default sites');
+  console.log('PASS: chat URL editing, validation, save/reload, no host requests and default sites');
   // Export content is valid Lua and uses the saved video/PiP keys.
   fs.writeFileSync('/tmp/workflow-exported-shortcuts.lua',await page.evaluate('WorkflowShortcuts.toHyprland(draft)'));
   await page.evaluate('document.querySelector("#desktop-section").open=false');

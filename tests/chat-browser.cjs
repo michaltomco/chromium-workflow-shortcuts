@@ -118,12 +118,6 @@ const key = () => execFileSync(process.env.SPLIT_TEST_KEY_HELPER, ['Alt_L', 'm']
     assert(outsideChat[0].active);
     assert(s.tabs.every(t => t.mutedInfo.muted));
     console.log('PASS: a chat-only window gets an outside tab so Chat can collapse');
-    // Pregrant site access in this disposable profile; native permission-dialog
-    // focus is timing-dependent. Settings permission denial is tested separately.
-    const setup = await connect(targets.find(t => t.url === 'chrome://extensions/'));
-    try {
-      await setup.evaluate("chrome.developerPrivate.addHostPermission('ejkfmjmeohnjjcljkfojojhkfaehaanf','https://*.example.org/*')");
-    } finally { setup.ws.close(); }
     await evaluate(`chrome.tabGroups.update(${s.group.id},{title:'Conversations'})`);
     const existingChatId = s.group.id;
     const settingsWindow = await evaluate('chrome.windows.getCurrent()');
@@ -141,7 +135,7 @@ const key = () => execFileSync(process.env.SPLIT_TEST_KEY_HELPER, ['Alt_L', 'm']
     await waitFor(async()=> { const s=await state(); return s.group.collapsed && s.tabs.every(t=>t.mutedInfo.muted); });
     await evaluate('document.querySelector("#reset-chat").click();document.querySelector("#save").click()');
     await waitFor(()=>evaluate('document.querySelector("#save").disabled && document.querySelector("#status").textContent.startsWith("Saved.")'));
-    console.log('PASS: custom URL saved with site access, used by native Alt+M, muted by the same Alt+M, original tabs preserved');
+    console.log('PASS: custom URL saved without site access, used by native Alt+M, muted by the same Alt+M, original tabs preserved');
   } finally {
     for (const id of windows) await evaluate(`chrome.windows.remove(${id})`).catch(() => {});
     settings.ws.close();
