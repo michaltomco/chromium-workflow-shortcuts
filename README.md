@@ -7,7 +7,7 @@ Keyboard controls for tabs, groups, memory unloading, and video Picture-in-Pictu
 1. Clone this repository and open `chrome://extensions`.
 2. Enable **Developer mode**, click **Load unpacked**, and select the cloned folder.
 3. Set shortcuts at `chrome://extensions/shortcuts` using the table below or
-   [command-shortcuts.json](command-shortcuts.json). Only four are assigned by default.
+   [command-shortcuts.json](command-shortcuts.json). Only four are assigned by default (Alt+J, Alt+K, Alt+T, Alt+Shift+O).
 
 ## Settings
 
@@ -16,18 +16,19 @@ Click the extension's toolbar button, or choose **Extension options** at
 
 - Add up to **10 tab-group presets** with their own names, colors, and URL lists.
 - Use each preset’s **Set shortcuts** button to assign its **Group N: toggle** command in Chromium. The same key opens/unmutes or mutes/collapses the group. Chat keeps Alt+M.
-- Record, clear, or reset video, PiP, and search keys; edits apply to open pages.
+- Change video, PiP, search, and tab keys in Chromium’s shortcut editor.
 - View live tab/browser assignments and open Chromium's shortcut editor to change them.
 - Export Hyprland keys, paste them above the integration's `dofile(…)` line, and reload Hyprland.
 
-Presets use the `tabs` permission to match existing tab URLs; adding sites does not request website access.
+By default, presets manage their own tabs without reading other tabs. Enable **Reuse matching tabs** to allow existing-tab detection; turning it off revokes the optional `tabs` permission. Chromium calls this permission “Read your browsing history”; the feature uses open-tab URLs and titles, not the history API.
+
+Video controls use temporary `activeTab` access only when invoked. There are no automatic page scripts or permanent website permissions. Videos embedded from another website may need to be opened in their own tab.
 
 Conflicting assignments are flagged before saving. Chromium controls its own
 browser-wide keys, so extensions cannot edit those directly.
 
 **Vimium C is required for the replacement new-tab page and `t` search.** Add this
-extension's ID to Vimium C's external-command allowlist. Remove conflicting
-Vimium bindings for Alt+Shift+P, Alt+M, Alt+C, and Alt+Shift+C if present.
+extension's ID to Vimium C's external-command allowlist. For plain `t` search, add `map t Vomnibar.activateInNewTab` to Vimium C’s key mappings. Remove conflicting Vimium bindings if present.
 
 ## Shortcuts
 
@@ -55,13 +56,12 @@ Vimium bindings for Alt+Shift+P, Alt+M, Alt+C, and Alt+Shift+C if present.
 
 Tab and group navigation wraps within the current window; ungrouped tabs form
 one section. Collapsing a group switches to the next available section.
-Previous-tab and move-tab-up commands are unassigned; choose other keys for them
+Video, PiP, and move-tab-up commands are unassigned on a fresh install; choose keys for them
 in Chromium's extension shortcut settings if needed.
 Unloaded tabs stay in the sidebar and reload when selected. Muted groups show
 `🔇` and turn grey; unmuting restores their original colour.
 
-After reloading the extension, refresh existing pages to reactivate page shortcuts
-such as Alt+Shift+P and Alt+P.
+When upgrading from 1.x, reload the extension and refresh existing pages to remove the old page listeners. Video keys now live at `chrome://extensions/shortcuts`; set **Video fullscreen** to Alt+P and **Picture-in-Picture** to Alt+Shift+P, or use your preferred keys. Custom video keys from the old settings page must be reassigned there.
 
 ## Optional Hyprland integration
 
@@ -85,4 +85,4 @@ With the optional Hyprland integration, **Alt+O** opens native split view.
 If upgrading from an earlier version, check that “Separate split view into regular tabs” is assigned
 to **Alt+Shift+O** at `chrome://extensions/shortcuts`.
 
-Presets reuse existing tabs across Chromium windows and keep tabs owned by other presets separate. A toggle opens/unmutes/focuses a collapsed group, or mutes/collapses an expanded one. Removing a preset keeps its browser tabs open.
+With optional existing-tab detection, presets reuse matching tabs across Chromium windows and keep tabs owned by other presets separate. A toggle opens/unmutes/focuses a collapsed group, or mutes/collapses an expanded one. Removing a preset keeps its browser tabs open.

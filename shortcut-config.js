@@ -49,7 +49,7 @@
   function validate(settings, commands = []) {
     const seen = new Map();
     const native = new Map(commands.filter(c => c.shortcut).map(c => [normalize(c.shortcut), c.description || c.name]));
-    for (const [group, actions] of [['page', pageActions], ['desktop', desktopActions]]) {
+    for (const [group, actions] of [['desktop', desktopActions]]) {
       for (const action of actions) {
         const key = normalize(settings[group][action.id]);
         if (!key) continue;

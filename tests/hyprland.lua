@@ -66,7 +66,7 @@ assert(commands[#commands].args.mods == "CTRL + SHIFT" and commands[#commands].a
 assert(commands[#commands].args.state == "down")
 run_timers(50)
 assert(commands[#commands].args.state == "up")
-assert(not bindings["ALT + P"], "Browser Alt+P is handled directly by the content script")
+assert(not bindings["ALT + P"], "Browser Alt+P is handled by the extension command")
 assert(pip.at.x == 1510, "Scaled PiP must fit the monitor")
 pip.at = { x = 100, y = 100 }
 run_timers(300)

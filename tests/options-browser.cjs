@@ -23,6 +23,9 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
   assert(extension, 'Load the extension in the disposable profile before testing');
   await setup.evaluate('chrome.management.setEnabled('+JSON.stringify(extension.id)+',true)');
   await setup.evaluate('chrome.developerPrivate.reload('+JSON.stringify(extension.id)+')');
+  for (const [commandName,keybinding] of [['video-fullscreen','Alt+P'],['video-pip','Alt+Shift+P']]) {
+    await setup.evaluate('chrome.developerPrivate.updateExtensionCommand('+JSON.stringify({extensionId:extension.id,commandName,keybinding})+')');
+  }
   const target = await (await fetch(base+'/json/new?'+encodeURIComponent('chrome-extension://'+extension.id+'/options.html'),{method:'PUT'})).json();
   const page = await connect(target);
   await waitFor(async () => {
@@ -30,7 +33,8 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
     if (await page.evaluate('document.body?.innerText.includes("ERR_BLOCKED_BY_CLIENT")')) await page.send("Page.reload");
     return false;
   });
-  await page.evaluate('chrome.storage.local.remove(["shortcutSettings","chatGroupUrls","groupPresets"])');
+  await page.evaluate('chrome.storage.local.remove(["shortcutSettings","chatGroupUrls","groupPresets","reuseExistingTabs"])');
+  await page.evaluate('chrome.permissions.remove({permissions:["tabs"]})');
   await page.send("Page.reload");
   const errors=[];page.ws.addEventListener('message',event=>{const message=JSON.parse(event.data);if(message.method==='Runtime.exceptionThrown')errors.push(message.params.exceptionDetails.text)});
   await page.send('Runtime.enable');
@@ -40,7 +44,7 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
   assert.equal(await page.evaluate('document.querySelectorAll("#page-actions .action").length'),3);
   assert.equal(await page.evaluate('document.querySelectorAll("#desktop-actions .action").length'),7);
   assert.equal(await page.evaluate('document.querySelector("#save").disabled'),true);
-  await page.evaluate('document.querySelector("#page-actions .shortcut").click()');
+  await page.evaluate('document.querySelector("#desktop-actions .shortcut").click()');
   await waitFor(()=>page.evaluate('document.querySelectorAll(".recording").length===1'));
   // A registered command must report a conflict, rather than act on the tab.
   await page.send('Input.dispatchKeyEvent',{type:'keyDown',key:'j',code:'KeyJ',windowsVirtualKeyCode:74,modifiers:1});
@@ -54,20 +58,20 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
   assert.equal(await page.evaluate('document.querySelector("#save").disabled'),false);
   await page.evaluate('document.querySelector("#save").click()');
   await waitFor(()=>page.evaluate('document.querySelector("#save").disabled'));
-  assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("shortcutSettings")).shortcutSettings.page.videoFullscreen)()'),'Alt+F');
+  assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("shortcutSettings")).shortcutSettings.desktop.moveTabPrevious)()'),'Alt+F');
   await page.send('Page.reload');
-  await waitFor(()=>page.evaluate('document.querySelector("#page-actions .shortcut")?.textContent === "Alt+F"'));
+  await waitFor(()=>page.evaluate('document.querySelector("#desktop-actions .shortcut")?.textContent === "Alt+F"'));
   // Filtering should work for commands as well as editable rows.
   await page.evaluate('const search=document.querySelector("#search");search.value="download";search.dispatchEvent(new Event("input"))');
   assert.equal(await page.evaluate('[...document.querySelectorAll("#browser-actions .action")].filter(row=>!row.hidden).length'),1);
   await page.evaluate('document.querySelector("#search").value="";document.querySelector("#search").dispatchEvent(new Event("input"))');
   // Clear a shortcut and restore defaults without changing Chromium assignments.
-  await page.evaluate('document.querySelector("#page-actions .clear").click();document.querySelector("#save").click()');
+  await page.evaluate('document.querySelector("#desktop-actions .clear").click();document.querySelector("#save").click()');
   await waitFor(()=>page.evaluate('document.querySelector("#save").disabled'));
-  assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("shortcutSettings")).shortcutSettings.page.videoFullscreen)()'),'');
+  assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("shortcutSettings")).shortcutSettings.desktop.moveTabPrevious)()'),'');
   await page.evaluate('document.querySelector("#reset").click();document.querySelector("#save").click()');
   await waitFor(()=>page.evaluate('document.querySelector("#save").disabled'));
-  assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("shortcutSettings")).shortcutSettings.page.videoFullscreen)()'),'Alt+P');
+  assert.equal(await page.evaluate('(async()=> (await chrome.storage.local.get("shortcutSettings")).shortcutSettings.desktop.moveTabPrevious)()'),'Alt+Shift+K');
   // Chat launch URLs save independently of shortcuts and survive reload.
   assert.equal(await page.evaluate('document.querySelector("#chat-urls").value.split("\\n").length'),3);
   await page.evaluate('document.querySelector("#chat-urls").value="javascript:alert(1)";document.querySelector("#chat-urls").dispatchEvent(new Event("input"));document.querySelector("#save").click()');
@@ -85,9 +89,11 @@ async function waitFor(test) { for(let i=0;i<80;i++){try {if(await test())return
   await waitFor(()=>page.evaluate('document.querySelector("#save").disabled && document.querySelector("#status").textContent.startsWith("Saved.")'));
   assert.deepEqual(await page.evaluate('(async()=> (await chrome.storage.local.get("chatGroupUrls")).chatGroupUrls)()'),["https://example.org/chat"]);
   const permissions = await page.evaluate("chrome.permissions.getAll()");
-  assert(permissions.permissions.includes("tabs"));
+  assert(!permissions.permissions.includes("tabs"));
+  assert.deepEqual(permissions.origins || [], []);
   assert.deepEqual(permissions.origins, originsBefore, "Presets must not add host access");
   const manifest = await page.evaluate("chrome.runtime.getManifest()");
+  assert.equal(manifest.content_scripts, undefined);
   assert.equal(manifest.host_permissions, undefined);
   assert.equal(manifest.optional_host_permissions, undefined);
   await page.evaluate('chrome.permissions.request=globalThis.originalPermissionRequest;document.querySelector("#reset-chat").click();document.querySelector("#save").click()');

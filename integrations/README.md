@@ -38,8 +38,7 @@ Chromium version.
 | PiP player | Alt+Shift+P | Return video and focus to Chromium |
 | PiP player | Alt+P | Toggle player fullscreen |
 
-Press Alt+P again to leave fullscreen; PiP's pin is restored on exit. Refresh existing video pages after
-updating the extension to load its new video shortcut.
+Press Alt+P again to leave fullscreen; PiP's pin is restored on exit. Assign video and PiP keys in Chromium’s extension shortcut editor, and use the same keys in the exported Hyprland configuration.
 
 The module also floats and pins PiP, keeps it within the scaled monitor bounds,
 and moves focus into Vimium's new-tab search after navigation or group naming.

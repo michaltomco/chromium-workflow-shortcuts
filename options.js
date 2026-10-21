@@ -16,7 +16,7 @@ function finishRecording() {
   if (settingsTabId !== undefined) chrome.runtime.sendMessage({ type: 'set-shortcut-capture', tabId: settingsTabId, active: false }).catch(() => {});
 }
 function renderEditable() {
-  for (const [group, actions] of [['page', config.pageActions], ['desktop', config.desktopActions]]) {
+  for (const [group, actions] of [['desktop', config.desktopActions]]) {
     const container = $(group === 'page' ? 'page-actions' : 'desktop-actions');
     container.replaceChildren();
     for (const action of actions) {
@@ -56,11 +56,13 @@ async function refreshNative() {
   nativeCommands = (await chrome.commands.getAll()).filter(c => !c.name.startsWith('_'));
   const container = $('browser-actions'); container.replaceChildren();
   groupEditor.updateCommands(nativeCommands);
+  $('page-actions').replaceChildren();
+  const videoCommands = ['video-fullscreen', 'video-pip', 'vimium-search'];
   for (const command of nativeCommands.filter(command => !WorkflowGroups.commandAction(command.name))) {
     const row = document.createElement('div'); row.className = 'action'; row.dataset.search = `${command.description} ${command.shortcut}`.toLowerCase();
     const label = document.createElement('span'); label.className = 'action-label'; label.textContent = command.description || command.name;
     const key = document.createElement('span'); key.className = 'native-key'; key.classList.toggle('unassigned', !command.shortcut); key.textContent = command.shortcut || 'Not assigned';
-    row.append(label, key); container.append(row);
+    row.append(label, key); (videoCommands.includes(command.name) ? $('page-actions') : container).append(row);
   }
   filterRows();
   try { config.validate(draft, nativeCommands); }
@@ -80,6 +82,7 @@ document.addEventListener('keydown', event => {
   } catch (error) { status(error.message, true); }
 }, true);
 $('search').addEventListener('input', filterRows);
+$('video-editor').addEventListener('click', () => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }));
 $('browser-editor').addEventListener('click', () => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }));
 $('reset').addEventListener('click', () => { draft = config.defaults(); groupEditor.reset(); finishRecording(); dirty(); status('Shortcut and group defaults restored. Save to apply. Chromium assignments are unchanged.'); });
 $('save').addEventListener('click', async () => {
@@ -99,11 +102,15 @@ $('save').addEventListener('click', async () => {
   } catch (error) { status(error.message, true); }
   finally { saving = false; dirty(); }
 });
-$('export-hyprland').addEventListener('click', () => {
+$('export-hyprland').addEventListener('click', async () => {
   try {
     if (JSON.stringify(saved) !== JSON.stringify(draft)) throw new Error('Save your changes before downloading the Hyprland configuration.');
     config.validate(draft, nativeCommands);
-    const url = URL.createObjectURL(new Blob([config.toHyprland(draft)], { type: 'text/plain' }));
+    const exported = clone(draft);
+    const commands = await chrome.commands.getAll();
+    exported.page.videoFullscreen = commands.find(c => c.name === 'video-fullscreen')?.shortcut || '';
+    exported.page.pictureInPicture = commands.find(c => c.name === 'video-pip')?.shortcut || '';
+    const url = URL.createObjectURL(new Blob([config.toHyprland(exported)], { type: 'text/plain' }));
     const link = document.createElement('a'); link.href = url; link.download = 'workflow-shortcuts.lua'; link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     status('Downloaded. Paste above your integration dofile(…) line, then run hyprctl reload.');
@@ -122,6 +129,27 @@ chrome.runtime.onMessage.addListener(message => {
     await chrome.runtime.sendMessage({ type: 'set-shortcut-capture', tabId: settingsTabId, active: false });
     const data = await chrome.storage.local.get(['shortcutSettings', WorkflowChat.key, WorkflowGroups.key]); saved = config.resolve(data.shortcutSettings); draft = clone(saved);
     groupEditor.load(WorkflowGroups.resolve(data[WorkflowGroups.key], data[WorkflowChat.key]));
-    renderEditable(); await refreshNative(); dirty();
+    await refreshReusePermission(); renderEditable(); await refreshNative(); dirty();
   } catch (error) { status(`Could not load settings: ${error.message}`, true); }
 })();
+
+async function refreshReusePermission() {
+  const { reuseExistingTabs } = await chrome.storage.local.get('reuseExistingTabs');
+  $('reuse-tabs').checked = reuseExistingTabs === true && await chrome.permissions.contains({ permissions: ['tabs'] });
+}
+$('reuse-tabs').addEventListener('change', async () => {
+  const control = $('reuse-tabs'), enabled = control.checked; control.disabled = true;
+  try {
+    if (enabled) {
+      const allowed = await chrome.permissions.request({ permissions: ['tabs'] });
+      if (!allowed) { control.checked = false; status('Existing-tab detection stays off.'); return; }
+      await chrome.storage.local.set({ reuseExistingTabs: true });
+    } else {
+      await chrome.storage.local.set({ reuseExistingTabs: false });
+      await chrome.permissions.remove({ permissions: ['tabs'] });
+    }
+    status(enabled ? 'Existing-tab detection enabled.' : 'Existing-tab detection disabled; tab-reading permission revoked.');
+  } catch (error) { status(error.message, true); await refreshReusePermission(); }
+  finally { control.disabled = false; }
+});
+chrome.permissions.onRemoved.addListener(() => refreshReusePermission().catch(() => {}));

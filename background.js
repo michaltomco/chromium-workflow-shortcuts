@@ -254,6 +254,9 @@ async function cycleTabSection(direction, sourceTabId) {
 // Serialize rapid keypresses so each one advances from the preceding result.
 const fullscreenPreviousStates = new Map();
 const browserCommandActions = {
+  "video-fullscreen": () => runVideoAction("fullscreen"),
+  "video-pip": () => runVideoAction("pip"),
+  "vimium-search": () => chrome.runtime.sendMessage("hfjbmagddngcpeloejdejnfgbamkjaeg", { handler: "command", command: "Vomnibar.activateInNewTab" }),
   "toggle-fullscreen": async () => {
     const window = await chrome.windows.getLastFocused();
     const state = window.state === "fullscreen"
@@ -432,3 +435,9 @@ scheduleMuteIndicatorSync();
 
 // The toolbar button opens the extension's shortcut settings.
 chrome.action.onClicked.addListener(() => chrome.runtime.openOptionsPage());
+
+// Upgrades must not retain the old required tab-reading permission by accident.
+chrome.runtime.onInstalled.addListener(async () => {
+  const { reuseExistingTabs } = await chrome.storage.local.get('reuseExistingTabs');
+  if (reuseExistingTabs !== true) await chrome.permissions.remove({ permissions: ['tabs'] });
+});

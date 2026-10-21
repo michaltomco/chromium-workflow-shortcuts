@@ -1,62 +1,17 @@
-const fs = require('node:fs');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const listeners = {};
-let requested = null, exits = 0, pipRequests = 0, pipExits = 0;
-function video(name, paused, width) {
-  return { name, paused, readyState: 4, videoWidth: 1920, clientWidth: width, clientHeight: width / 2,
-    requestFullscreen() { requested = name; return Promise.resolve(); },
-    requestPictureInPicture() { pipRequests++; return Promise.resolve(); } };
-}
-const document = { fullscreenElement: null, fullscreenEnabled: true,
-  pictureInPictureElement: null, pictureInPictureEnabled: true,
-  exitPictureInPicture() { pipExits++; return Promise.resolve(); },
-  querySelectorAll: () => [video('paused', true, 1000), video('playing', false, 500)],
-  exitFullscreen() { exits++; return Promise.resolve(); } };
-let storageChanged;
-const context = vm.createContext({
-  document, window: { addEventListener(type, callback) { listeners[type] = callback; } }, console,
-  chrome: { storage: { local: { get: async () => ({}) }, onChanged: { addListener(callback) { storageChanged = callback; } } } },
-});
-vm.runInContext(fs.readFileSync('shortcut-config.js', 'utf8'), context);
-vm.runInContext(fs.readFileSync('keyboard.js', 'utf8'), context);
-
-function key(type, overrides = {}) {
-  const event = { key: 'p', code: 'KeyP', altKey: true, ctrlKey: false, shiftKey: false,
-    metaKey: false, isComposing: false, repeat: false,
-    preventDefault() {}, stopImmediatePropagation() {}, ...overrides };
-  listeners[type](event);
-}
-key('keydown', { key: 'F', code: 'KeyF', shiftKey: true });
-assert.equal(requested, null, 'Alt+Shift+F is no longer intercepted');
-key('keydown');
-assert.equal(requested, 'playing');
-requested = null;
-key('keyup'); key('keypress'); key('keydown', { repeat: true });
-assert.equal(requested, null);
-document.fullscreenElement = {};
-key('keydown'); assert.equal(exits, 1);
-document.fullscreenElement = null;
-key('keydown');
-assert.equal(requested, 'playing');
-requested = null;
-key('keydown', { key: 'P', shiftKey: true });
-assert.equal(pipRequests, 1);
-assert.equal(requested, null, 'PiP shortcut must not trigger fullscreen');
-document.pictureInPictureElement = {};
-key('keydown', { key: 'P', shiftKey: true });
-assert.equal(pipExits, 1);
-document.pictureInPictureElement = null;
-key('keydown', { key: 'k', code: 'KeyK' });
-assert.equal(pipRequests, 1, 'Alt+K is no longer intercepted by video actions');
-document.querySelectorAll = () => [];
-key('keydown'); assert.equal(requested, null);
-document.querySelectorAll = () => [video('playing', false, 500)];
-storageChanged({ shortcutSettings: { newValue: { page: { videoFullscreen: 'Alt+F', pictureInPicture: 'Alt+P', vimiumSearch: '' } } } }, 'local');
-requested = null;
-key('keydown'); assert.equal(requested, null, 'Old video key stops working after a settings change');
-key('keydown', { key: 'f', code: 'KeyF' }); assert.equal(requested, 'playing');
-storageChanged({ shortcutSettings: { newValue: { page: { videoFullscreen: '' } } } }, 'local');
-requested = null;
-key('keydown', { key: 'f', code: 'KeyF' }); assert.equal(requested, null, 'Clearing disables the shortcut');
-console.log('PASS: video/PiP toggles, repeat suppression, live shortcut changes, old keys removed, clear-to-disable');
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+(async()=>{
+  let chosen,exits=0,pip=0,styles=0;
+  const doc={querySelectorAll:type=>type==='video'?videos:[],fullscreenElement:null,pictureInPictureElement:null,
+    exitFullscreen:async()=>{exits++},exitPictureInPicture:async()=>{exits++},
+    getElementById:()=>styles>0,createElement:()=>({}),head:{append:()=>{styles++}}};
+  const make=(name,paused,width)=>({paused,clientWidth:width,clientHeight:width/2,readyState:4,videoWidth:640,ownerDocument:doc,
+    requestFullscreen:async()=>{chosen=name},requestPictureInPicture:async()=>{pip++}});
+  let videos=[make('paused',true,1000),make('playing',false,500)];
+  const c=vm.createContext({document:doc});vm.runInContext(fs.readFileSync('video-actions.js','utf8'),c);
+  assert.equal(await c.videoAction('fullscreen','test-css'),'opened');assert.equal(chosen,'playing');assert.equal(styles,1);
+  await c.videoAction('fullscreen','test-css');assert.equal(styles,1);
+  doc.fullscreenElement={};assert.equal(await c.videoAction('fullscreen',''),'closed');assert.equal(exits,1);doc.fullscreenElement=null;
+  await c.videoAction('pip','');assert.equal(pip,1);doc.pictureInPictureElement={};await c.videoAction('pip','');assert.equal(exits,2);doc.pictureInPictureElement=null;
+  videos=[];assert.equal(await c.videoAction('fullscreen',''),'no-video');
+  console.log('PASS: video ranking, fullscreen/PiP toggles, contain-style reuse and no-video handling');
+})().catch(e=>{console.error(e);process.exitCode=1});

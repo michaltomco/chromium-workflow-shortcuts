@@ -1,28 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Chromium Workflow Shortcuts",
-  "version": "1.29.0",
+  "version": "2.0.0",
   "description": "Keyboard controls for tabs, groups, unloading, fullscreen, browser navigation, and video Picture-in-Picture.",
   "background": {
     "service_worker": "service-worker.js"
   },
-  "content_scripts": [
-    {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "shortcut-config.js",
-        "keyboard.js"
-      ],
-      "css": [
-        "video-fullscreen.css"
-      ],
-      "run_at": "document_start",
-      "all_frames": true,
-      "match_about_blank": true
-    }
-  ],
   "commands": {
     "unload-collapse-next-group": {
       "description": "Unload and collapse group, then switch to next"
@@ -119,6 +102,15 @@
     },
     "toggle-preset-10": {
       "description": "Group 10: toggle"
+    },
+    "video-fullscreen": {
+      "description": "Video fullscreen"
+    },
+    "video-pip": {
+      "description": "Picture-in-Picture"
+    },
+    "vimium-search": {
+      "description": "Search in a new tab (Vimium C)"
     }
   },
   "chrome_url_overrides": {
@@ -127,7 +119,8 @@
   "permissions": [
     "tabGroups",
     "storage",
-    "tabs"
+    "activeTab",
+    "scripting"
   ],
   "options_ui": {
     "page": "options.html",
@@ -148,5 +141,8 @@
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
-  }
+  },
+  "optional_permissions": [
+    "tabs"
+  ]
 }
