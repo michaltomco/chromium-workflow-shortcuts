@@ -33,22 +33,23 @@ function createPresetEditor({ onChange, onStatus }) {
     }
     for (const preset of draft) {
       const card = document.createElement('div'); card.className = 'preset-card'; card.dataset.slot = preset.slot; card.dataset.presetId = preset.id; card.setAttribute('role', 'group'); card.setAttribute('aria-label', `Group ${preset.slot} preset`);
-      card.innerHTML = '<div class="preset-heading"><strong class="preset-slot"></strong><button class="quiet preset-remove" type="button">Remove</button></div><div class="preset-fields"><label>Name<input class="preset-name" type="text" autocomplete="off"></label><fieldset class="preset-colors"><legend>Color</legend><details class="preset-color-menu"><summary><span class="preset-color-preview"></span><span class="preset-color-name"></span><span aria-hidden="true">▾</span></summary><div class="preset-swatches"></div></details></fieldset></div><label class="chat-label preset-url-label">URLs · one website per line</label><textarea class="preset-urls" rows="4" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="preset-keys"><span>Toggle <span class="native-key" data-key="toggle"></span></span><button class="secondary preset-shortcuts" type="button">Set shortcuts ↗</button></div><p class="footnote preset-key-help"></p>';
+      card.innerHTML = '<div class="preset-heading"><strong class="preset-slot"></strong><button class="quiet preset-remove" type="button">Remove</button></div><div class="preset-fields"><label>Name<input class="preset-name" type="text" autocomplete="off"></label><fieldset class="preset-colors"><legend>Color</legend><details class="preset-color-menu"><summary><span class="preset-color-preview"></span><span aria-hidden="true">▾</span></summary><div class="preset-swatches"></div></details></fieldset></div><label class="chat-label preset-url-label">URLs · one website per line</label><textarea class="preset-urls" rows="4" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="preset-keys"><span>Toggle <span class="native-key" data-key="toggle"></span></span><button class="secondary preset-shortcuts" type="button">Set shortcuts ↗</button></div><p class="footnote preset-key-help"></p>';
       card.querySelector('.preset-slot').textContent = `Group ${preset.slot}`;
       const name = card.querySelector('.preset-name'); name.value = preset.name;
       name.addEventListener('input', () => { preset.name = name.value; onChange(); });
-      const selectedColor = card.querySelector('.preset-color-name');
       const colorName = value => value[0].toUpperCase() + value.slice(1);
       const menu = card.querySelector('.preset-color-menu');
       const preview = card.querySelector('.preset-color-preview');
       preview.dataset.color = preset.color;
-      selectedColor.textContent = colorName(preset.color);
+      const summary = menu.querySelector('summary');
+      const describeColor = value => { summary.title = colorName(value); summary.setAttribute('aria-label', 'Color: ' + colorName(value)); };
+      describeColor(preset.color);
       for (const value of WorkflowGroups.colors) {
         const label = document.createElement('label'); label.className = 'preset-swatch'; label.title = colorName(value);
         const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'color-' + preset.id;
         radio.value = value; radio.checked = value === preset.color; radio.setAttribute('aria-label', colorName(value));
         const swatch = document.createElement('span'); swatch.dataset.color = value;
-        radio.addEventListener('change', () => { preset.color = value; selectedColor.textContent = colorName(value); preview.dataset.color = value; menu.open = false; menu.querySelector('summary').focus(); onChange(); });
+        radio.addEventListener('change', () => { preset.color = value; describeColor(value); preview.dataset.color = value; menu.open = false; menu.querySelector('summary').focus(); onChange(); });
         label.append(radio, swatch); card.querySelector('.preset-swatches').append(label);
       }
       const urls = card.querySelector('.preset-urls');
