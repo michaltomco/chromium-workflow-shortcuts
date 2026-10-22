@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chromium Workflow Shortcuts",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "description": "Keyboard controls for tabs, groups, unloading, fullscreen, browser navigation, and video Picture-in-Picture.",
   "background": {
     "service_worker": "service-worker.js"
@@ -113,7 +113,7 @@
       "description": "Search in a new tab (Vimium C)"
     },
     "prepare-split-search": {
-      "description": "Prepare Vimium split search (Hyprland Alt+O)"
+      "description": "Prepare group-aware split picker (Hyprland Alt+O)"
     }
   },
   "chrome_url_overrides": {
@@ -123,7 +123,8 @@
     "tabGroups",
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "search"
   ],
   "options_ui": {
     "page": "options.html",

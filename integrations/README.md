@@ -65,4 +65,4 @@ Changing those page keys applies immediately on websites; apply the exported
 configuration to update the separate PiP window as well. Empty keys disable actions.
 The integration leaves its custom browser remaps inactive on the settings page.
 
-**Alt+O** opens native split view and focuses Vimium C’s bar in its second pane. Assign **Prepare Vimium split search (Hyprland Alt+O)** to the same key in Chromium’s extension shortcut editor. Existing-tab suggestions open their URL in the pane without moving the original tab. **Alt+Shift+O** is a browser-wide extension command that separates the focused split, including from the split picker and address bar.
+**Alt+O** opens native split view with the group-aware picker in its second pane. Assign **Prepare group-aware split picker (Hyprland Alt+O)** to the same key in Chromium’s extension shortcut editor. Search tabs by group/title/URL, choose preset sites, or enter a URL/search. Use arrows or Ctrl+J/K, then Enter. Existing-tab choices open a copy without moving the original tab. **Alt+Shift+O** is a browser-wide extension command that separates the focused split, including from the split picker and address bar.

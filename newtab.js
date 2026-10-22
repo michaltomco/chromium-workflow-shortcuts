@@ -6,23 +6,15 @@
     return;
   }
   const split = tab.splitViewId >= 0;
-  document.title = split ? 'Vimium Split New Tab' : 'Vimium New Tab';
   if (split) {
-    // A split has an extra focus stop for the original pane. Navigate only
-    // after this pane receives focus, so Vimium's input inherits it.
-    await new Promise(resolve => {
-      const timer = setInterval(() => { if (document.hasFocus()) { clearInterval(timer); resolve(); } }, 50);
-    });
-  } else {
-    await new Promise(resolve => setTimeout(resolve, 100));
+    location.replace(chrome.runtime.getURL('split-picker.html'));
+    return;
   }
-  // A nonempty, whitespace-only substitution-key list requests URL navigation
-  // for tab suggestions without applying substitution rules. Otherwise Vimium
-  // switches to the existing tab and leaves the split pane behind.
-  const command = split ? 'Vomnibar.activate#itemSedKeys=%20' : 'Vomnibar.activate';
+  document.title = 'Vimium New Tab';
+  await new Promise(resolve => setTimeout(resolve, 100));
   const result = await chrome.runtime.sendMessage('hfjbmagddngcpeloejdejnfgbamkjaeg', {
     handler: 'command', command: 'openUrl',
-    options: { url: 'vimium://blank', reuse: 'current', $then: command }
+    options: { url: 'vimium://blank', reuse: 'current', $then: 'Vomnibar.activate' }
   });
   if (result === false) throw Error('Allow this extension in Vimium C’s external-command allowlist.');
 })().catch(error => {

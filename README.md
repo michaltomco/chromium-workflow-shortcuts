@@ -20,7 +20,7 @@ Click the extension's toolbar button, or choose **Extension options** at
 - View live tab/browser assignments and open Chromium's shortcut editor to change them.
 - Export Hyprland keys, paste them above the integration's `dofile(…)` line, and reload Hyprland.
 
-By default, presets manage their own tabs without reading other tabs. Enable **Reuse matching tabs** to allow existing-tab detection; turning it off revokes the optional `tabs` permission. Chromium calls this permission “Read your browsing history”; the feature uses open-tab URLs and titles, not the history API.
+By default, presets manage their own tabs without reading other tabs. Enable **Reuse matching tabs**, or choose **Show open tabs** in the split picker, to grant optional open-tab access. Turning off **Reuse matching tabs** revokes that shared permission. Chromium calls this permission “Read your browsing history”; the feature uses open-tab URLs and titles, not the history API.
 
 Video controls use temporary `activeTab` access only when invoked. There are no automatic page scripts or permanent website permissions. Videos embedded from another website may need to be opened in their own tab.
 
@@ -80,7 +80,12 @@ and these native browser mappings. It works without Omarchy or private dotfiles.
 
 See [setup instructions](integrations/README.md#setup) to load the optional Lua file.
 
-With the optional Hyprland integration, **Alt+O** opens native split view with Vimium C’s bar in the second pane. Assign **Prepare Vimium split search (Hyprland Alt+O)** to **Alt+O** in Chromium. The bar accepts URLs, searches, and existing-tab suggestions; existing-tab results open a copy of that URL in the pane, leaving the original tab intact.
+**Alt+O** opens a **group-aware split picker** with the Hyprland integration. Assign **Prepare group-aware split picker (Hyprland Alt+O)** to **Alt+O** in Chromium.
+
+- Search tabs by title, URL, or group name; choose preset sites; or type a URL/search.
+- **↑/↓** or **Ctrl+J/K**, then **Enter** selects. **Shift+Enter** opens the typed URL/search. **Esc** clears, then cancels.
+- Existing-tab choices open a copy in the second pane. **Show open tabs** grants optional tab access; presets and URL/search work without it. Vimium C is not required.
+
 **Alt+Shift+O** separates the focused split into regular tabs, including from the split picker or address bar.
 If upgrading from an earlier version, check that “Separate split view into regular tabs” is assigned
 to **Alt+Shift+O** at `chrome://extensions/shortcuts`.
