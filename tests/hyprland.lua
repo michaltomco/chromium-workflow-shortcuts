@@ -10,6 +10,7 @@ local other = { address = "other", class = "terminal", title = "Terminal" }
 local active = browser
 local windows = { browser, pip, other }
 local bindings, events, timers, commands, rules = {}, {}, {}, {}, {}
+local binding_options = {}
 local function action(kind)
   return function(args) return { kind = kind, args = args } end
 end
@@ -21,7 +22,7 @@ hl = {
       if selector == "address:" .. window.address then return window end
     end
   end,
-  bind = function(key, callback) bindings[key] = callback end,
+  bind = function(key, callback, options) bindings[key] = callback; binding_options[key] = options end,
   unbind = function(key) bindings[key] = nil end,
   on = function(event, callback)
     events[event] = events[event] or {}
@@ -86,10 +87,15 @@ assert(not bindings["ALT + G"] and not bindings["CTRL + H"])
 assert(not bindings["ALT + O"], "Split-view shortcut leaves other apps alone")
 assert(not bindings["ALT + SHIFT + K"], "Move-up shortcut leaves other apps alone")
 assert(not bindings["ALT + P"])
+run_timers(500)
 active = pip
 emit("window.active")
 assert(bindings["ALT + SHIFT + P"] and not bindings["ALT + G"])
+assert(binding_options["ALT + P"].release and binding_options["ALT + SHIFT + P"].release, "Forward PiP shortcuts after physical key release")
 bindings["ALT + P"]()
+local scheduled = #timers
+for i = 1, 20 do bindings["ALT + P"](); bindings["ALT + SHIFT + P"]() end
+assert(#timers == scheduled, "Rapid PiP shortcuts must coalesce into one handoff")
 assert(commands[#commands].kind ~= "close", "Do not close PiP through the window manager")
 run_timers(100)
 assert(commands[#commands].kind == "focus" and commands[#commands].args.window == "address:browser")
@@ -100,6 +106,7 @@ assert(commands[#commands].kind == "key" and commands[#commands].args.key == "P"
 assert(commands[#commands].args.mods == "ALT" and commands[#commands].args.state == "down")
 run_timers(50)
 assert(commands[#commands].args.state == "up")
+run_timers(500)
 active = pip
 emit("window.active")
 bindings["ALT + SHIFT + P"]()
@@ -112,6 +119,7 @@ assert(not bindings["ALT + SHIFT + P"])
 run_timers(100)
 assert(commands[#commands].kind == "key" and commands[#commands].args.mods == "ALT + SHIFT")
 run_timers(50)
+run_timers(500)
 active = pip
 emit("window.active")
 bindings["ALT + P"]()
@@ -121,6 +129,15 @@ active = other
 emit("window.active")
 run_timers(100)
 assert(#commands == before_switch, "Do not forward fullscreen if focus changes during PiP return")
+run_timers(500)
+active = pip
+emit("window.active")
+bindings["ALT + SHIFT + P"]()
+local before_early_switch = #commands
+active = other
+emit("window.active")
+run_timers(100)
+assert(#commands == before_early_switch, "Cancel pending focus handoff after switching apps")
 active = browser
 emit("window.active")
 browser.title = "Vimium New Tab - Chromium"
@@ -147,6 +164,7 @@ bindings, events, timers, commands, rules = {}, {}, {}, {}, {}
 active = browser
 assert(load(source, "@/tmp/public clone/integrations/hyprland.lua"))()
 assert(not bindings["CTRL + ALT + SHIFT + S"])
+run_timers(500)
 active = pip
 emit("window.active")
 assert(bindings["ALT + F"] and bindings["ALT + O"])

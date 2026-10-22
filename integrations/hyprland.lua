@@ -7,8 +7,10 @@ local function shell_quote(value)
   return "'" .. value:gsub("'", "'\"'\"'") .. "'"
 end
 local focus_command = "bash " .. shell_quote(root .. "/focus-newtab.sh")
-local function bind(keys, description, callback)
-  hl.bind(keys, callback, { description = description })
+local function bind(keys, description, callback, options)
+  options = options or {}
+  options.description = description
+  hl.bind(keys, callback, options)
 end
 
 local function is_chromium(window)
@@ -140,6 +142,7 @@ end
 do
   local installed = false
   local last_chromium_address = nil
+  local returning = false
   local function is_pip(window)
     return window and window.floating
       and window.title:lower():match("^picture.?in.?picture$") ~= nil
@@ -153,6 +156,7 @@ do
     if hotkeys.videoFullscreen ~= "" then hl.unbind(hotkeys.videoFullscreen) end
     if wanted then
       local function return_to_browser(fullscreen)
+        if returning then return end
         local window = hl.get_active_window()
         if not is_pip(window) then return end
         local browser = last_chromium_address
@@ -168,7 +172,12 @@ do
         end
         local address = browser and browser.address
         if not address then return end
+        returning = true
+        -- Coalesce repeated presses through focus, forwarding, and key release.
+        hl.timer(function() returning = false end, { timeout = 500, type = "oneshot" })
         hl.timer(function()
+          local current = hl.get_active_window()
+          if not is_pip(current) or current.address ~= window.address then return end
           if not hl.get_window("address:" .. address) then return end
           hl.dispatch(hl.dsp.focus({ window = "address:" .. address }))
           do
@@ -190,12 +199,12 @@ do
       if hotkeys.videoFullscreen ~= "" then
         bind(hotkeys.videoFullscreen, "PiP: Return to Chromium and fullscreen video", function()
           return_to_browser(true)
-        end)
+        end, { release = true })
       end
       if hotkeys.pictureInPicture ~= "" then
         bind(hotkeys.pictureInPicture, "PiP: Return video to browser tab", function()
           return_to_browser(false)
-        end)
+        end, { release = true })
       end
     end
     installed = wanted
