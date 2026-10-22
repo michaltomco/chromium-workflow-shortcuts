@@ -22,7 +22,21 @@ async function videoAction(action, css) {
       const style = doc.createElement('style'); style.id = 'workflow-fullscreen-style'; style.textContent = css;
       (doc.head || doc.documentElement).append(style);
     }
-    await video.requestFullscreen();
+    // Include the site's controls in the fullscreen subtree. Plain videos get
+    // native controls for the duration of fullscreen instead.
+    const player = video.closest('#movie_player, .html5-video-player, .video-js, .plyr, .jwplayer, .shaka-video-container, media-controller');
+    const target = player || video;
+    const hadControls = video.controls;
+    target.classList.add('workflow-video-fullscreen');
+    if (!player) video.controls = true;
+    function cleanup() {
+      target.classList.remove('workflow-video-fullscreen');
+      if (!player) video.controls = hadControls;
+      doc.removeEventListener('fullscreenchange', changed);
+    }
+    function changed() { if (doc.fullscreenElement !== target) cleanup(); }
+    doc.addEventListener('fullscreenchange', changed);
+    try { await target.requestFullscreen(); } catch (error) { cleanup(); throw error; }
   } else {
     video.disablePictureInPicture = false;
     await video.requestPictureInPicture();

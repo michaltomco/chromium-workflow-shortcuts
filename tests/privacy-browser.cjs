@@ -7,7 +7,7 @@ assert(process.env.SPLIT_TEST_KEY_HELPER, 'Use only with a disposable Xvfb displ
 const key=(...keys)=>execFileSync(process.env.SPLIT_TEST_KEY_HELPER,keys);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 (async()=>{
-  const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end(`<!doctype html><title>Video privacy test</title><video muted autoplay style="width:500px;object-fit:cover"></video><canvas width="640" height="360"></canvas><script>const c=document.querySelector('canvas'),ctx=c.getContext('2d');setInterval(()=>{ctx.fillStyle='blue';ctx.fillRect(0,0,640,360)},50);const v=document.querySelector('video');v.srcObject=c.captureStream(20);v.play();</script>`)});
+  const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end(`<!doctype html><title>Video privacy test</title><div id="movie_player"><video muted autoplay style="width:500px;object-fit:cover"></video><button id="timeline" style="position:absolute;bottom:0">Seek</button></div><canvas width="640" height="360"></canvas><script>const c=document.querySelector('canvas'),ctx=c.getContext('2d');setInterval(()=>{ctx.fillStyle='blue';ctx.fillRect(0,0,640,360)},50);const v=document.querySelector('video');v.srcObject=c.captureStream(20);v.play();</script>`)});
   await new Promise(r=>server.listen(18766,'127.0.0.1',r));
   const targets=await(await fetch(base+'/json/list')).json();
   const options=await connect(targets.find(t=>t.url.includes('/options.html')));
@@ -42,6 +42,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
     for(const [commandName,keybinding] of [['video-fullscreen','Alt+P'],['video-pip','Alt+Shift+P']])await setup.evaluate(`chrome.developerPrivate.updateExtensionCommand(${JSON.stringify({extensionId:'ejkfmjmeohnjjcljkfojojhkfaehaanf',commandName,keybinding})})`);
     key('Alt_L','p');await waitFor(()=>inspect('!!document.fullscreenElement'));
     assert.equal(await inspect('getComputedStyle(document.querySelector("video")).objectFit'),'contain');
+    assert.equal(await inspect('document.fullscreenElement.id'),'movie_player');
+    assert.equal(await inspect('document.fullscreenElement.contains(document.querySelector("#timeline"))'),true);
     key('Alt_L','p');await waitFor(()=>inspect('!document.fullscreenElement'));
     // Let all transient page activation expire. Each new native shortcut must
     // supply its own gesture; inspection must never create one.
