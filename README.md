@@ -83,7 +83,7 @@ See [setup instructions](integrations/README.md#setup) to load the optional Lua 
 **Alt+O** opens a **group-aware split picker** with the Hyprland integration. Assign **Prepare group-aware split picker (Hyprland Alt+O)** to **Alt+O** in Chromium.
 
 - Search tabs by title, URL, or group name; choose preset sites; or type a URL/search.
-- **↑/↓** or **Ctrl+J/K**, then **Enter** selects. **Shift+Enter** opens the typed URL/search. **Esc** clears, then cancels.
+- **↑/↓** or **Ctrl+J/K**, then **Enter** selects. **Shift+Enter** opens the typed URL/search. **Esc** enters browsing: **J/K** selects results, **H/L** switches filters, **/** or **I** returns to search. **Esc** again cancels.
 - Existing-tab choices open a copy in the second pane. **Show open tabs** grants optional tab access; presets and URL/search work without it. Vimium C is not required.
 
 **Alt+Shift+O** separates the focused split into regular tabs, including from the split picker or address bar.
