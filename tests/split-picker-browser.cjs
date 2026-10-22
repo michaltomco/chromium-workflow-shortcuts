@@ -6,7 +6,7 @@ assert(process.env.SPLIT_TEST_DISPLAY && process.env.SPLIT_TEST_KEY_HELPER,'Use 
 const key=(...keys)=>execFileSync(process.env.SPLIT_TEST_KEY_HELPER,keys);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 (async()=>{
- const server=http.createServer((q,r)=>{r.setHeader('Content-Type','text/html');r.end('<title>'+ (q.url==='/existing'?'Design notes':'Source page')+'</title><body>'+q.url+'</body>')});
+ const server=http.createServer((q,r)=>{r.setHeader('Content-Type','text/html');r.end('<title>'+ (q.url==='/existing'?'Design notes':'Source page')+'</title><body>'+q.url+'<script>window.lastKey=null;addEventListener("keydown",e=>window.lastKey=e.key)</script></body>')});
  await new Promise(r=>server.listen(18766,'127.0.0.1',r));const origin='http://127.0.0.1:18766';
  const targets=await(await fetch(base+'/json/list')).json();
  const options=await connect(targets.find(t=>t.url.includes('/options.html'))),setup=await connect(targets.find(t=>t.url==='chrome://extensions/'));
@@ -34,6 +34,11 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    key('BackSpace');assert.equal(await inspect('document.querySelector("#query").value'),'');
    return (await tabs()).find(t=>t.active);
   }
+  async function checkPageFocus(pane){
+   await waitFor(()=>inspect('document.readyState==="complete" && document.hasFocus()'));
+   assert.equal((await tabs()).find(t=>t.id===pane.id).active,true,'The chosen second pane must be active');
+   key('z');await waitFor(()=>inspect('window.lastKey==="z"'));
+  }
   let pane=await launch();
   assert.equal(await inspect('document.querySelector("#permission").hidden'),false);
   assert.equal(await inspect('document.querySelectorAll(".result").length'),1);
@@ -42,6 +47,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   await inspect('chrome.permissions.request=async()=>false;document.querySelector("#allow-tabs").click()');
   await waitFor(()=>inspect('document.querySelector("#status").textContent.includes("declined")'));
   key('Return');await waitFor(()=>inspect('location.href') .then(url=>url===origin+'/preset'));
+  await checkPageFocus(pane);
   assert.equal((await tabs()).find(t=>t.id===pane.id).splitViewId,(await tabs()).find(t=>t.id===source).splitViewId);
   picker.ws.close();picker=null;await options.evaluate(`chrome.tabs.remove(${pane.id})`);
   // Grant open-tab access through Chromium's real optional-permission prompt.
@@ -65,12 +71,14 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   key('Control_L','j');assert.equal(await inspect('document.querySelector("#query").getAttribute("aria-activedescendant")'),'result-1');
   key('Control_L','k');assert.equal(await inspect('document.querySelector("#query").getAttribute("aria-activedescendant")'),'result-0');key('Return');
   await waitFor(async()=> (await tabs()).find(t=>t.id===pane.id)?.url===origin+'/existing');
+  await checkPageFocus(pane);
   assert.equal((await tabs()).find(t=>t.id===existing.id).groupId,group);
   assert.equal((await tabs()).find(t=>t.id===pane.id).splitViewId,(await tabs()).find(t=>t.id===source).splitViewId);
   picker.ws.close();picker=null;await options.evaluate(`chrome.tabs.remove(${pane.id})`);
   pane=await launch();
   await inspect(`document.querySelector('#query').value='${origin}/direct';document.querySelector('#query').dispatchEvent(new Event('input'))`);
   key('Shift_L','Return');await waitFor(async()=> (await tabs()).find(t=>t.id===pane.id)?.url===origin+'/direct');
+  await checkPageFocus(pane);
   picker.ws.close();picker=null;await options.evaluate(`chrome.tabs.remove(${pane.id})`);
   pane=await launch();
   await inspect(`document.querySelector('#query').value='workflow picker search';document.querySelector('#query').dispatchEvent(new Event('input'))`);

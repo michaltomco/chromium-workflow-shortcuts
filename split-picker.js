@@ -48,8 +48,10 @@ async function open(entry) {
   busy=true;
   try {
     // Never switch to the source tab: navigate only this pane.
-    if (entry.search) await chrome.search.query({text:entry.search,tabId:current.id});
-    else await chrome.tabs.update(current.id,{url:entry.url});
+    if (entry.search) {
+      await chrome.tabs.update(current.id,{active:true});
+      await chrome.search.query({text:entry.search,tabId:current.id});
+    } else await chrome.tabs.update(current.id,{url:entry.url,active:true});
   } catch (failure) {busy=false;throw failure;}
 }
 async function refresh() {
