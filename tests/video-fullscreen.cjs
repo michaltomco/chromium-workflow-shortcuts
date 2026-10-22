@@ -23,6 +23,15 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
   await c.videoAction('fullscreen','test-css');assert.equal(styles,1);assert.equal(chosen,'player');assert.equal(videos[1].controls,false);
   doc.fullscreenElement={};assert.equal(await c.videoAction('fullscreen',''),'closed');assert.equal(exits,1);doc.fullscreenElement=null;
   await c.videoAction('pip','');assert.equal(pip,1);doc.pictureInPictureElement={};await c.videoAction('pip','');assert.equal(exits,2);doc.pictureInPictureElement=null;
+  const returning=videos[1];let plays=0;
+  returning.paused=false;returning.play=async()=>{plays++;returning.paused=false};
+  doc.pictureInPictureElement=returning;
+  doc.exitPictureInPicture=async()=>{returning.paused=true;doc.pictureInPictureElement=null};
+  await c.videoAction('pip','');assert.equal(plays,1,'Resume if PiP exit pauses a playing video');
+  returning.paused=true;doc.pictureInPictureElement=returning;
+  await c.videoAction('pip','');assert.equal(plays,1,'A paused video must stay paused');
+  returning.paused=false;doc.pictureInPictureElement=returning;
+  await c.videoAction('fullscreen','');assert.equal(plays,2);assert.equal(chosen,'player');
   videos=[];assert.equal(await c.videoAction('fullscreen',''),'no-video');
   console.log('PASS: video ranking, fullscreen/PiP toggles, contain-style reuse and no-video handling');
 })().catch(e=>{console.error(e);process.exitCode=1});

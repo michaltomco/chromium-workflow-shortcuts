@@ -90,7 +90,7 @@ active = pip
 emit("window.active")
 assert(bindings["ALT + SHIFT + P"] and not bindings["ALT + G"])
 bindings["ALT + P"]()
-assert(commands[#commands].kind == "close" and commands[#commands].args.window == "address:pip")
+assert(commands[#commands].kind ~= "close", "Do not close PiP through the window manager")
 run_timers(100)
 assert(commands[#commands].kind == "focus" and commands[#commands].args.window == "address:browser")
 active = browser
@@ -103,12 +103,15 @@ assert(commands[#commands].args.state == "up")
 active = pip
 emit("window.active")
 bindings["ALT + SHIFT + P"]()
-assert(commands[#commands].kind == "close")
+assert(commands[#commands].kind ~= "close")
 run_timers(100)
 assert(commands[#commands].kind == "focus" and commands[#commands].args.window == "address:browser")
 active = browser
 emit("window.active")
 assert(not bindings["ALT + SHIFT + P"])
+run_timers(100)
+assert(commands[#commands].kind == "key" and commands[#commands].args.mods == "ALT + SHIFT")
+run_timers(50)
 active = pip
 emit("window.active")
 bindings["ALT + P"]()

@@ -8,11 +8,18 @@ async function videoAction(action, css) {
     }
   }
   visit(document);
+  let returningVideo;
   for (const doc of documents) {
     if (action === 'fullscreen' && doc.fullscreenElement) { await doc.exitFullscreen(); return 'closed'; }
-    if (action === 'pip' && doc.pictureInPictureElement) { await doc.exitPictureInPicture(); return 'closed'; }
+    if (doc.pictureInPictureElement) {
+      returningVideo = doc.pictureInPictureElement;
+      const wasPlaying = !returningVideo.paused && !returningVideo.ended;
+      await doc.exitPictureInPicture();
+      if (wasPlaying && returningVideo.paused) await returningVideo.play();
+      if (action === 'pip') return 'closed';
+    }
   }
-  const video = documents.flatMap(doc => [...doc.querySelectorAll('video')])
+  const video = returningVideo || documents.flatMap(doc => [...doc.querySelectorAll('video')])
     .filter(video => video.readyState >= 2 && video.videoWidth > 0)
     .sort((a,b) => Number(a.paused)-Number(b.paused) || b.clientWidth*b.clientHeight-a.clientWidth*a.clientHeight)[0];
   if (!video) return 'no-video';

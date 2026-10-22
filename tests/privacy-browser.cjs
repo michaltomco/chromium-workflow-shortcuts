@@ -54,6 +54,18 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
     key('Alt_L','Shift_L','p');await waitFor(()=>inspect('!!document.pictureInPictureElement'));
     await options.evaluate(`chrome.windows.update(${w.id},{focused:true});chrome.tabs.update(${w.tabs[0].id},{active:true})`);
     key('Alt_L','Shift_L','p');await waitFor(()=>inspect('!document.pictureInPictureElement'));
+    assert.equal(await inspect('document.querySelector("video").paused'),false,'Returning from PiP keeps playback running');
+    await inspect('document.querySelector("video").pause()');
+    key('Alt_L','Shift_L','p');await waitFor(()=>inspect('!!document.pictureInPictureElement'));
+    await options.evaluate(`chrome.windows.update(${w.id},{focused:true});chrome.tabs.update(${w.tabs[0].id},{active:true})`);
+    key('Alt_L','Shift_L','p');await waitFor(()=>inspect('!document.pictureInPictureElement'));
+    assert.equal(await inspect('document.querySelector("video").paused'),true,'Returning from PiP leaves paused video paused');
+    await inspect('document.querySelector("video").play()');
+    key('Alt_L','Shift_L','p');await waitFor(()=>inspect('!!document.pictureInPictureElement'));
+    await options.evaluate(`chrome.windows.update(${w.id},{focused:true});chrome.tabs.update(${w.tabs[0].id},{active:true})`);
+    key('Alt_L','p');await waitFor(()=>inspect('!!document.fullscreenElement && !document.pictureInPictureElement'));
+    assert.equal(await inspect('document.querySelector("video").paused'),false,'PiP to fullscreen keeps playback running');
+    key('Alt_L','p');await waitFor(()=>inspect('!document.fullscreenElement'));
     // Native remapping applies immediately without installing a page listener.
     await setup.evaluate(`chrome.developerPrivate.updateExtensionCommand({extensionId:'ejkfmjmeohnjjcljkfojojhkfaehaanf',commandName:'video-fullscreen',keybinding:'Alt+F'})`);
     key('Alt_L','p');await sleep(150);assert.equal(await inspect('!!document.fullscreenElement'),false);

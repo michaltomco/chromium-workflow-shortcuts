@@ -167,17 +167,18 @@ do
           end
         end
         local address = browser and browser.address
-        hl.dispatch(hl.dsp.window.close({ window = "address:" .. window.address }))
         if not address then return end
         hl.timer(function()
           if not hl.get_window("address:" .. address) then return end
           hl.dispatch(hl.dsp.focus({ window = "address:" .. address }))
-          if fullscreen then
+          do
             hl.timer(function()
               local active = hl.get_active_window()
               if not is_chromium(active) or active.address ~= address then return end
-              local key = hotkeys.videoFullscreen:match("([^ +]+)$")
-              local mods = hotkeys.videoFullscreen:match("^(.-)%s*%+%s*[^+]+$") or ""
+              -- Let Chromium exit PiP; closing its surface pauses playback.
+              local shortcut = fullscreen and hotkeys.videoFullscreen or hotkeys.pictureInPicture
+              local key = shortcut:match("([^ +]+)$")
+              local mods = shortcut:match("^(.-)%s*%+%s*[^+]+$") or ""
               hl.dispatch(hl.dsp.send_key_state({ mods = mods, key = key, state = "down" }))
               hl.timer(function()
                 hl.dispatch(hl.dsp.send_key_state({ mods = mods, key = key, state = "up" }))
