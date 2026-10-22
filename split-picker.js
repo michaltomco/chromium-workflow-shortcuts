@@ -1,7 +1,13 @@
 const $ = id => document.getElementById(id);
 let current, entries=[], visible=[], selected=0, filter='all', busy=false, refreshGeneration=0;
 function error(error) { $('status').textContent=error.message || String(error); }
-function focusQuery() { if (document.hasFocus()) $('query').focus(); }
+function focusQuery() {
+  if (!document.hasFocus()) return;
+  $('query').focus();
+  // The desktop handoff sends F6 only while the legacy title is present.
+  // Acknowledge focus immediately so it cannot cycle past this input.
+  document.title = 'Split picker';
+}
 window.addEventListener('focus',focusQuery);
 function render() {
   const query=$('query').value;
@@ -81,4 +87,14 @@ $('allow-tabs').addEventListener('click',async()=>{
 });
 chrome.permissions.onAdded.addListener(()=>{if(current)refresh().catch(error);});
 chrome.permissions.onRemoved.addListener(()=>{if(current)refresh().catch(error);});
-(async()=>{current=await chrome.tabs.getCurrent();await refresh();focusQuery();})().catch(error);
+(async()=>{
+  current=await chrome.tabs.getCurrent();
+  // Native split creation can leave the original pane selected after navigation.
+  // Select this pane only while that same split is still active; never pull the
+  // user back from an unrelated tab or focus another application.
+  if (current.splitViewId>=0) {
+    const [active]=await chrome.tabs.query({windowId:current.windowId,active:true});
+    if (active?.splitViewId===current.splitViewId) await chrome.tabs.update(current.id,{active:true});
+  }
+  await refresh();focusQuery();
+})().catch(error);

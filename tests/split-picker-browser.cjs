@@ -27,8 +27,11 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    await waitFor(async()=> (await(await fetch(base+'/json/list')).json()).some(t=>t.url.endsWith('/split-picker.html')));
    picker=await connect((await(await fetch(base+'/json/list')).json()).find(t=>t.url.endsWith('/split-picker.html')));
    await waitFor(()=>inspect('document.querySelectorAll(".result").length>0'));
-   key('F6');key('F6');key('F6');
-   await waitFor(()=>inspect('document.hasFocus() && document.activeElement.id==="query"'));
+   // Match the desktop helper: stop as soon as the picker acknowledges focus.
+   for(let step=0;step<3 && await inspect('document.title')==='Vimium Split New Tab';step++) {key('F6');await sleep(70);}
+   await waitFor(()=>inspect('document.hasFocus() && document.activeElement.id==="query" && document.title==="Split picker"'));
+   key('r');await waitFor(()=>inspect('document.querySelector("#query").value==="r"'));
+   key('BackSpace');assert.equal(await inspect('document.querySelector("#query").value'),'');
    return (await tabs()).find(t=>t.active);
   }
   let pane=await launch();
@@ -46,7 +49,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   await sleep(350);key('Tab');key('Return');
   await waitFor(()=>options.evaluate('chrome.permissions.contains({permissions:["tabs"]})'));
   pane=await launch();
-  await inspect(`document.querySelector('#query').value='research design';document.querySelector('#query').dispatchEvent(new Event('input'))`);
+  for(const ch of 'research design')key(ch===' '?'space':ch);
+  assert.equal(await inspect('document.querySelector("#query").value'),'research design');
   assert.equal(await inspect('document.querySelector(".result .name").textContent'),'Design notes');
   assert.equal(await inspect('document.querySelector(".section").textContent'),'This window · Research');
   if(process.env.SPLIT_PICKER_SCREENSHOT){const shot=await picker.send('Page.captureScreenshot');require('node:fs').writeFileSync(process.env.SPLIT_PICKER_SCREENSHOT,Buffer.from(shot.data,'base64'));}
