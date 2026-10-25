@@ -51,8 +51,9 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   assert.equal((await tabs()).find(t=>t.id===pane.id).splitViewId,(await tabs()).find(t=>t.id===source).splitViewId);
   picker.ws.close();picker=null;await options.evaluate(`chrome.tabs.remove(${pane.id})`);
   // Grant open-tab access through Chromium's real optional-permission prompt.
+  await options.send('Page.bringToFront');
   await options.evaluate('globalThis.permissionResult=null;void chrome.permissions.request({permissions:["tabs"]}).then(v=>globalThis.permissionResult=v)');
-  await sleep(350);key('Tab');key('Return');
+  await sleep(1000);key('Tab');key('Return');
   await waitFor(()=>options.evaluate('chrome.permissions.contains({permissions:["tabs"]})'));
   pane=await launch();
   for(const ch of 'research design')key(ch===' '?'space':ch);

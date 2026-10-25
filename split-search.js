@@ -12,14 +12,18 @@ chrome.tabs.onCreated.addListener(created => {
     if (!request || request.expires < Date.now() || created.openerTabId !== request.sourceId
         || created.windowId !== request.windowId) return;
     for (let attempt = 0; attempt < 20 && Date.now() < request.expires; attempt++) {
-      const [source, pane, window] = await Promise.all([
+      const [source, pane, window, active] = await Promise.all([
         chrome.tabs.get(request.sourceId).catch(()=>null), chrome.tabs.get(created.id).catch(()=>null),
-        chrome.windows.getLastFocused({windowTypes:['normal']})
+        chrome.windows.getLastFocused({windowTypes:['normal']}),
+        chrome.tabs.query({windowId:request.windowId,active:true})
       ]);
-      if (!source || !pane || window.id !== request.windowId || !pane.active) return;
+      if (!source || !pane || window.id !== request.windowId
+          || !active.some(tab=>tab.id===source.id || tab.id===pane.id)) return;
       if (pane.splitViewId >= 0 && pane.splitViewId === source.splitViewId) {
         await chrome.storage.session.remove('splitSearchRequest');
-        await chrome.tabs.update(pane.id, {url:chrome.runtime.getURL('newtab.html?focus')});
+        // Chromium may leave the original pane selected. Activate the new pane
+        // as part of opening its picker, rather than requiring it to be active.
+        await chrome.tabs.update(pane.id, {url:chrome.runtime.getURL('split-picker.html'),active:true});
         return;
       }
       await new Promise(resolve=>setTimeout(resolve,50));
