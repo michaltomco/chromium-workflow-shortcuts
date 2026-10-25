@@ -44,6 +44,7 @@ hl.window_rule({
 -- While Alt+G's native naming popup is open, defer the new-tab focus handoff.
 local chromium_newtab_focus_generation = 0
 local chromium_group_naming = nil
+local chromium_split_source = nil
 local function finish_chromium_group_name()
   local address = chromium_group_naming
   chromium_newtab_focus_generation = chromium_newtab_focus_generation + 1
@@ -103,6 +104,7 @@ do
           if shortcut[1] == hotkeys.splitView then
             local active = hl.get_active_window()
             local address = active and active.address
+            chromium_split_source = active and { address = address, title = active.title } or nil
             local key = hotkeys.splitView:match("([^ +]+)$")
             local mods = hotkeys.splitView:match("^(.-)%s*%+%s*[^+]+$") or ""
             -- First arm the extension, then let Chromium create the split.
@@ -225,11 +227,14 @@ do
     chromium_newtab_focus_generation = chromium_newtab_focus_generation + 1
     local request = chromium_newtab_focus_generation
     local address = window.address
+    local source_title = split and chromium_split_source and chromium_split_source.address == address
+      and chromium_split_source.title or nil
     hl.timer(function()
       local active = hl.get_active_window()
       if chromium_group_naming == address or request ~= chromium_newtab_focus_generation or not active or active.address ~= address
           or not is_chromium(active) or active.title ~= (split and "Vimium Split New Tab - Chromium" or "Blank Page - Chromium") then return end
-      hl.exec_cmd(focus_command .. " " .. shell_quote(address) .. (split and " --split" or ""))
+      hl.exec_cmd(focus_command .. " " .. shell_quote(address)
+        .. (split and (" --split" .. (source_title and " " .. shell_quote(source_title) or "")) or ""))
     end, { timeout = 650, type = "oneshot" })
   end)
 end

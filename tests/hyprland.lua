@@ -151,6 +151,7 @@ browser.title = "Vimium Split New Tab - Chromium"
 emit("window.title")
 run_timers(650)
 assert(commands[#commands]:find("--split", 1, true), "Split panes use their own focus handoff")
+assert(commands[#commands]:find("--split 'Video - Chromium'", 1, true), "Allow the original pane title during the split focus cycle")
 local count = #commands
 browser.title = "Vimium New Tab - Chromium"
 emit("window.title")

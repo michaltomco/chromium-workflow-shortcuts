@@ -5,6 +5,9 @@ const base=process.env.CHROMIUM_DEBUG_URL||'http://127.0.0.1:18765';
 assert(process.env.SPLIT_TEST_DISPLAY && process.env.SPLIT_TEST_KEY_HELPER,'Use only an isolated display');
 const key=(...keys)=>execFileSync(process.env.SPLIT_TEST_KEY_HELPER,keys);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
+const focusBin=fs.mkdtempSync(path.join(os.tmpdir(),'workflow-focus-test-'));
+fs.symlinkSync(path.resolve('tests/hyprctl-xvfb.cjs'),path.join(focusBin,'hyprctl'));
 (async()=>{
  const server=http.createServer((q,r)=>{r.setHeader('Content-Type','text/html');r.end('<title>'+ (q.url==='/existing'?'Design notes':'Source page')+'</title><body>'+q.url+'<script>window.lastKey=null;addEventListener("keydown",e=>window.lastKey=e.key)</script></body>')});
  await new Promise(r=>server.listen(18766,'127.0.0.1',r));const origin='http://127.0.0.1:18766';
@@ -27,8 +30,9 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    await waitFor(async()=> (await(await fetch(base+'/json/list')).json()).some(t=>t.url.endsWith('/split-picker.html')));
    picker=await connect((await(await fetch(base+'/json/list')).json()).find(t=>t.url.endsWith('/split-picker.html')));
    await waitFor(()=>inspect('document.querySelectorAll(".result").length>0'));
-   // Match the desktop helper: stop as soon as the picker acknowledges focus.
-   for(let step=0;step<3 && await inspect('document.title')==='Vimium Split New Tab';step++) {key('F6');await sleep(70);}
+   // Run the actual desktop helper against real native Chromium window titles.
+   execFileSync('bash',['focus-newtab.sh','test-browser','--split','Source page - Chromium'],
+    {env:{...process.env,PATH:focusBin+path.delimiter+process.env.PATH}});
    await waitFor(()=>inspect('document.hasFocus() && document.activeElement.id==="query" && document.title==="Split picker"'));
    key('r');await waitFor(()=>inspect('document.querySelector("#query").value==="r"'));
    key('BackSpace');assert.equal(await inspect('document.querySelector("#query").value'),'');
@@ -94,5 +98,5 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   assert.equal((await tabs()).find(t=>t.id===source).active,true);
   assert.equal((await tabs()).find(t=>t.id===source).splitViewId,-1);
   console.log('PASS: native split handoff/focus, permission denial/grant/revocation, grouped collapsed tabs, presets, URL/search, source preservation and Escape cancellation');
- }finally{picker?.ws.close();if(windowId)await options.evaluate(`chrome.windows.remove(${windowId})`).catch(()=>{});options.ws.close();setup.ws.close();server.close()}
+ }finally{picker?.ws.close();if(windowId)await options.evaluate(`chrome.windows.remove(${windowId})`).catch(()=>{});options.ws.close();setup.ws.close();server.close();fs.rmSync(focusBin,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});

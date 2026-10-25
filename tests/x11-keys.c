@@ -6,6 +6,7 @@
 #include <X11/extensions/XTest.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int main(int argc, char **argv) {
     const char *name = getenv("SPLIT_TEST_DISPLAY");
@@ -22,6 +23,14 @@ int main(int argc, char **argv) {
         XWindowAttributes attributes;
         XGetWindowAttributes(display, children[i], &attributes);
         if (attributes.map_state == IsViewable && attributes.width > 300 && attributes.height > 200) {
+            if (argc == 2 && !strcmp(argv[1], "--title")) {
+                Atom type; int format; unsigned long length, remaining;
+                unsigned char *title = NULL;
+                XGetWindowProperty(display, children[i], XInternAtom(display, "_NET_WM_NAME", False),
+                    0, 4096, False, AnyPropertyType, &type, &format, &length, &remaining, &title);
+                if (title) { puts((char *)title); XFree(title); }
+                XFree(children); XCloseDisplay(display); return 0;
+            }
             XSetInputFocus(display, children[i], RevertToParent, CurrentTime);
             break;
         }
