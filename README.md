@@ -82,7 +82,7 @@ See [setup instructions](integrations/README.md#setup) to load the optional Lua 
 
 **Alt+O** opens a **group-aware split picker** with the Hyprland integration. Assign **Prepare group-aware split picker (Hyprland Alt+O)** to **Alt+O** in Chromium.
 
-- Search tabs by title, URL, or group name; choose preset sites; or type a URL/search.
+- Search tabs by title, URL, or group name; choose preset sites; or type a URL/search. Vimium C search aliases work too: `y Grubby` searches YouTube using your Vimium configuration. Without Vimium C or its external-command permission, search uses Chromium’s default engine.
 - **↑/↓** or **Ctrl+J/K**, then **Enter** selects. **Shift+Enter** opens the typed URL/search. **Esc** enters browsing: **J/K** selects results, **H/L** switches filters, **/** or **I** returns to search. **Esc** again cancels.
 - Existing-tab choices open a copy in the second pane. **Show open tabs** grants optional tab access; presets and URL/search work without it. Vimium C is not required.
 

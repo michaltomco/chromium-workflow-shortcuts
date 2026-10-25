@@ -28,7 +28,7 @@ function render() {
     const row=document.createElement('div');row.className='result';row.id='result-'+index;row.setAttribute('role','option');row.setAttribute('aria-selected',String(index===selected));
     const dot=document.createElement('span');dot.className='dot';dot.style.background=SplitPicker.colors[entry.color];
     const details=document.createElement('div');details.className='details';const name=document.createElement('div');name.className='name';name.textContent=entry.title;
-    const url=document.createElement('div');url.className='url';url.textContent=entry.url||'Default search engine';details.append(name,url);row.append(dot,details);
+    const url=document.createElement('div');url.className='url';url.textContent=entry.url||'Vimium C aliases · browser search if unavailable';details.append(name,url);row.append(dot,details);
     row.addEventListener('mousedown',event=>event.preventDefault());row.addEventListener('click',()=>open(entry).catch(error));section.append(row);
   });
   if (visible.length) $('query').setAttribute('aria-activedescendant','result-'+selected);else $('query').removeAttribute('aria-activedescendant');
@@ -49,8 +49,7 @@ async function open(entry) {
   try {
     // Never switch to the source tab: navigate only this pane.
     if (entry.search) {
-      await chrome.tabs.update(current.id,{active:true});
-      await chrome.search.query({text:entry.search,tabId:current.id});
+      await WorkflowSplitSearch.search(entry.search,current.id);
     } else await chrome.tabs.update(current.id,{url:entry.url,active:true});
   } catch (failure) {busy=false;throw failure;}
 }

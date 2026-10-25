@@ -13,9 +13,19 @@ fs.symlinkSync(path.resolve('tests/hyprctl-xvfb.cjs'),path.join(focusBin,'hyprct
  await new Promise(r=>server.listen(18766,'127.0.0.1',r));const origin='http://127.0.0.1:18766';
  const targets=await(await fetch(base+'/json/list')).json();
  const options=await connect(targets.find(t=>t.url.includes('/options.html'))),setup=await connect(targets.find(t=>t.url==='chrome://extensions/'));
- let picker,windowId;
+ let picker,windowId,vimium;
  const inspect=s=>picker.evaluate(s,{userGesture:false});
  try {
+  if(process.env.SPLIT_TEST_VIMIUM){
+   const target=(await(await fetch(base+'/json/list')).json()).find(t=>t.type==='service_worker'&&t.url.includes('hfjbmag'));
+   assert(target,'Load Vimium C in this disposable profile');vimium=await connect(target);
+   await vimium.evaluate("__moduleMap.settings.ho('extAllowList','ejkfmjmeohnjjcljkfojojhkfaehaanf')");
+   const engines=await vimium.evaluate("__moduleMap.store.z.searchEngines");
+   const configured=engines+String.fromCharCode(10)+'customdocs: '+origin+'/alias?q=$s Test alias';
+   await vimium.evaluate(`__moduleMap.settings.ho('searchEngines',${JSON.stringify(configured)})`);
+   // Let the fixture observe test keys instead of Vimium consuming them.
+   await vimium.evaluate(`__moduleMap.settings.ho('exclusionRules',${JSON.stringify([{pattern:':'+origin+'/',passKeys:''}])})`);
+  }
   await options.evaluate(`chrome.permissions.remove({permissions:['tabs']})`);
   await options.evaluate(`chrome.storage.local.set({groupPresets:[{id:'research',slot:1,name:'Saved research',color:'green',urls:['${origin}/preset']}]})`);
   await setup.evaluate(`chrome.developerPrivate.updateExtensionCommand({extensionId:'ejkfmjmeohnjjcljkfojojhkfaehaanf',commandName:'prepare-split-search',keybinding:'Alt+O'})`);
@@ -90,6 +100,18 @@ fs.symlinkSync(path.resolve('tests/hyprctl-xvfb.cjs'),path.join(focusBin,'hyprct
   key('Shift_L','Return');await waitFor(async()=> /[?&]q=workflow(?:\+|%20)picker(?:\+|%20)search/.test((await tabs()).find(t=>t.id===pane.id)?.url||''));
   assert.equal((await tabs()).find(t=>t.id===pane.id).splitViewId,(await tabs()).find(t=>t.id===source).splitViewId);
   picker.ws.close();picker=null;await options.evaluate(`chrome.tabs.remove(${pane.id})`);
+  if(vimium){
+   for(const [query,expected] of [['y Grubby','https://www.youtube.com/results?search_query=Grubby'],['customdocs split panes',origin+'/alias?q=split+panes']]){
+    pane=await launch();
+    for(const ch of query)key(...(ch===' '?['space']:ch!==ch.toLowerCase()?['Shift_L',ch.toLowerCase()]:[ch]));
+    key('Return');
+    await waitFor(async()=> (await tabs()).find(t=>t.id===pane.id)?.url===expected).catch(async failure=>{console.log({query,expected,actual:(await tabs()).find(t=>t.id===pane.id)?.url});throw failure});
+    assert.equal((await tabs()).find(t=>t.id===pane.id).splitViewId,(await tabs()).find(t=>t.id===source).splitViewId);
+    assert.equal((await tabs()).find(t=>t.id===pane.id).active,true);
+    picker.ws.close();picker=null;await options.evaluate(`chrome.tabs.remove(${pane.id})`);
+   }
+   console.log('PASS: real Vimium C YouTube and custom search aliases stay in the second pane');
+  }
   pane=await launch();
   await options.evaluate('chrome.permissions.remove({permissions:["tabs"]})');
   await waitFor(()=>inspect('!document.querySelector("#permission").hidden'));
@@ -98,5 +120,5 @@ fs.symlinkSync(path.resolve('tests/hyprctl-xvfb.cjs'),path.join(focusBin,'hyprct
   assert.equal((await tabs()).find(t=>t.id===source).active,true);
   assert.equal((await tabs()).find(t=>t.id===source).splitViewId,-1);
   console.log('PASS: native split handoff/focus, permission denial/grant/revocation, grouped collapsed tabs, presets, URL/search, source preservation and Escape cancellation');
- }finally{picker?.ws.close();if(windowId)await options.evaluate(`chrome.windows.remove(${windowId})`).catch(()=>{});options.ws.close();setup.ws.close();server.close();fs.rmSync(focusBin,{recursive:true,force:true})}
+ }finally{vimium?.ws.close();picker?.ws.close();if(windowId)await options.evaluate(`chrome.windows.remove(${windowId})`).catch(()=>{});options.ws.close();setup.ws.close();server.close();fs.rmSync(focusBin,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -1,10 +1,10 @@
 <!doctype html>
 <!-- Keep the legacy title for focus handoff with existing Hyprland installations. -->
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>Vimium Split New Tab</title><link rel="stylesheet" href="split-picker.css"><script src="chat-config.js" defer></script><script src="group-config.js" defer></script><script src="split-picker-model.js" defer></script><script src="split-picker.js" defer></script></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>Vimium Split New Tab</title><link rel="stylesheet" href="split-picker.css"><script src="chat-config.js" defer></script><script src="group-config.js" defer></script><script src="split-picker-model.js" defer></script><script src="split-picker-search.js" defer></script><script src="split-picker.js" defer></script></head>
 <body><main><header><p class="eyebrow">SPLIT VIEW</p><h1>Choose the second pane</h1></header>
 <label class="search"><span class="sr-only">Find a tab, group, or website</span><input id="query" type="text" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="results" autocomplete="off" spellcheck="false" placeholder="Tab, group, URL, or search…" autofocus></label>
 <div class="filters" role="group" aria-label="Show"><button data-filter="all" aria-pressed="true">All</button><button data-filter="tabs" aria-pressed="false">Open tabs</button><button data-filter="presets" aria-pressed="false">Presets</button></div>
 <div id="permission" hidden><span>Include open-tab titles and URLs.</span> <button id="allow-tabs">Show open tabs</button></div>
 <p id="status" role="status"></p><div id="results" role="listbox" tabindex="0" aria-label="Pages for the second pane"></div>
-<footer><span>Esc · browse with H J K L</span><span>H/L · filters &nbsp; J/K · results</span><span>/ or I · search &nbsp; Enter · open</span><span>Shift+Enter · URL/search &nbsp; Esc again · cancel</span></footer><p class="hint">Existing tabs stay open. A copy opens here.</p>
+<footer><span>Esc · browse with H J K L</span><span>H/L · filters &nbsp; J/K · results</span><span>/ or I · search &nbsp; Enter · open</span><span>Shift+Enter · URL/search &nbsp; Esc again · cancel</span></footer><p class="hint">Search aliases work here too: y Grubby → YouTube. Existing tabs stay open.</p>
 </main></body></html>
